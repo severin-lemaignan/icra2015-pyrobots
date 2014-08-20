@@ -1,0 +1,266 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%2345678901234567890123456789012345678901234567890123456789012345678901234567890
+%        1         2         3         4         5         6         7         8
+\documentclass[a4paper, 10pt, conference]{ieeeconf}      % Use this line for a4 paper
+
+\IEEEoverridecommandlockouts                              % This command is only needed if 
+                                                          % you want to use the \thanks command
+
+\overrideIEEEmargins                                      % Needed to meet printer requirements.
+
+% See the \addtolength command later in the file to balance the column lengths
+% on the last page of the document
+
+\usepackage[utf8x]{inputenc}
+
+\usepackage[protrusion=true,expansion=true]{microtype}
+\usepackage{cite}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{url}
+
+\usepackage{minted}
+\renewcommand{\theFancyVerbLine}{
+  \sffamily\textcolor[rgb]{0.5,0.5,0.5}{\scriptsize\arabic{FancyVerbLine}}}
+
+\graphicspath{{figs/}}
+\DeclareGraphicsExtensions{.pdf,.jpg,.png}
+
+\usepackage{fixme}
+
+\newcommand{\ie}{{\textit{i.e.\ }}}
+\newcommand{\cf}{{\textit{cf\ }}}
+\newcommand{\eg}{{\textit{e.g.\ }}}
+\newcommand{\pyRobots}{{{\sc pyRobots}}}
+
+
+\title{\LARGE \bf
+    {\sc pyRobots}, a executive environment for robot control
+}
+
+\author{Séverin Lemaignan, Anahita Hosseini and Pierre Dillenbourg\\
+Computer-Human Interaction in Learning and Instruction \\
+Ecole Polytechnique Fédérale de Lausanne (EPFL) \\
+CH-1015 Lausanne, Switzerland \\
+{\tt\small firstname.last@epfl.ch}
+}
+
+\begin{document}
+
+
+\maketitle
+\thispagestyle{empty}
+\pagestyle{empty}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstract}
+
+    Blabla
+
+\end{abstract}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+
+
+A set of software helpers to write high-level robot controllers.
+
+\emph{Not} a middleware: it connects to one or several middleware to actually
+perform actions.
+
+The toolkit does not aim at formal verifiability: no contribution in this field.
+
+
+
+\subsection{Related Work: Robot Execution Control}
+
+\begin{itemize}
+    \item FSM -> SMACH
+    \item agent-based approaches -> ROAR
+    \item logic languages -> OpenPRS, CRAM
+    \item dedicated control languages -> URBI
+    \item similar attempts: teer (co-routine -> cooperative multi-threading)
+    \item and the vast majority: ad-hoc scripts
+\end{itemize}
+
+\subsection{Guiding principles}
+
+\begin{itemize}
+    \item Use a de-facto standard language (Python) to ease adoption (familiar to
+        many researchers, large software ecosystem, excellent integration with
+        most robotic softwares, in particular common middlewares like ROS or
+        YARP)
+    \item should be as lightweight/transparent as possible (in particular from a
+        syntax perspective) so that the
+        programmer can focus on the programming of the behaviours (I'm
+        watching you, SMACH)
+    \item should enforce as few design choices as possible. 'convention over
+        configuration' as often as possible
+\end{itemize}
+
+\subsection{Main features}
+
+Parallelism (all \emph{actions} are asynchronous) and event-based programming
+are at the core.
+
+It also offers support for robot resources management (locking of ``parts'' of
+the robot) and uniform manipulation of 6D poses (that integrates transparently
+with other tools like ROS's TF when available).
+
+\section{Overview of the framework}
+
+
+\begin{itemize}
+    \item Turns any Python function into a background action with the decorator
+        @action.
+    \item Robot actions are non-blocking by default: they are instanciated as
+        futures (lightweight threads),
+    \item Actions can be cancelled at any time via signals (the
+        ActionCancelled signal is raised).
+    \item Lock specific resources with a simple @lock(...) in front of the
+        actions. When starting, actions will wait for resources to be
+        available if needed.
+    \item Supports compound resources (like WHEELS == LEFTWHEEL +
+        RIGHTWHEEL)
+    \item Create event with robot.every(<condition>).do(<action>)
+    \item Poses are managed explicitely and can easily be
+        transformed from one reference frame to another one
+        (integrates with ROS TF when available).
+    \item Extensive logging support to debug and replay
+        experiments.
+\end{itemize}
+
+\section{Example}
+
+%\begin{listing}[ht]
+\begin{minted}[frame=lines,
+               linenos=true,
+               gobble=4,
+               fontsize=\scriptsize]{python}
+    import time
+    from robots import GenericRobot
+    from robots.decorators import action, lock
+    from robots.resources import Resource
+    from robots.signals import ActionCancelled
+
+    # create a 'lockable' resource for our robot
+    WHEELS = Resource("wheels")
+
+    class MyRobot(GenericRobot):
+
+      def __init__(self):
+        super(MyRobot, self).__init__()
+
+        # create (and set) one element in the robot's state.
+        # Here a bumper.
+        self.state.my_bumper = False
+
+        # do whatever other initialization you need :-)
+
+      def send_goal(self, pose):
+        # move your robot using your favorite middleware
+        print("Starting to move towards %s" % pose)
+
+      def stop(self):
+        # stop your robot using your favorite middleware
+        print("Motion stopped")
+
+      def whatever_lowlevel_method_you_need(self):
+        pass
+
+    @lock(WHEELS)
+    @action
+    def move_forward(robot):
+      """ We write action in a simple imperative, 
+          seemingly blocking way.
+      """
+
+      # the target pose: simply x += 1.0m in the robot's 
+      # frame. pyRobots will handle the frames 
+      # transformations as needed.
+      target = [1.0, 0., 0., "base_link"]
+
+      try:
+        robot.send_goal(target)
+
+        while(robot.pose.distance(robot.pose.myself(), 
+                                  target) > 0.1):
+            # robot.sleep is exactly like time.sleep, 
+            # except it lets the pyrobots signals pass 
+            # through.
+            robot.sleep(0.5)
+
+        print("Motion succeeded")
+
+      except ActionCancelled:
+        # if the action is cancelled, clean up your state
+        robot.stop()
+
+
+    with MyRobot() as robot:
+
+      # Turn on DEBUG logging.
+      # Shortcut to configure the std Python logging system
+      robot.debug()
+
+      robot.whenever("my_bumper", value = True)
+                                    .do(move_forward)
+
+      try:
+        while True:
+          time.sleep(0.5)
+      except KeyboardInterrupt:
+        pass
+\end{minted}
+%\caption{Example from external file}
+%\label{listing:3}
+%\end{listing}
+
+
+\section{Experimental Deployments}
+
+\subsection{Platforms}
+
+\begin{itemize}
+    \item PR2, with ROS and pocolibs
+    \item Nao, with ROS and NAOqi
+    \item Ranger with Aseba and ROS
+\end{itemize}
+
+\subsection{Experiments and studies}
+
+\begin{itemize}
+    \item roboscopie
+    \item LAAS architecture
+    \item CoWriter
+    \item Ranger
+\end{itemize}
+
+\paragraph{Stress-test in a nursery}
+
+\begin{figure}
+        \centering
+        \includegraphics[width=0.9\columnwidth]{ranger-side}
+        \caption{Infants playing freely (!) with an EPFL's \emph{Ranger} robot.
+        The behaviour of the robot is controlled with \pyRobots}
+        \label{expe-nursery}
+\end{figure}
+
+\section{Future Work}
+
+\begin{itemize}
+    \item control mixing policies?
+    \item control over action priorities
+\end{itemize}
+
+\section*{Acknowledgment}
+
+This work has been supported by...
+
+\bibliographystyle{IEEEtran}
+\bibliography{IEEEabrv,biblio}
+
+
+\end{document}
