@@ -159,11 +159,11 @@ It also offers support for robot resources management (locking of ``parts'' of
 the robot) and uniform manipulation of 6D poses (that integrates transparently
 with other tools like ROS's TF when available).
 
-\section{Concepts}
+\section{Concepts and Overview}
 
-Before introducing and explaining step-by-step a complete example in the next
-section, it is useful to introduce the main concepts of \pyRobots.
-
+Before introducing and explaining step-by-step a complete working example in the next
+section, it is useful to first introduce the main concepts of \pyRobots, and
+provide an overview of the features and mechanisms.
 
 \begin{itemize}
     \item Turns any Python function into a background action with the decorator
@@ -177,14 +177,53 @@ section, it is useful to introduce the main concepts of \pyRobots.
         available if needed.
     \item Supports compound resources (like \python|WHEELS == LEFTWHEEL + RIGHTWHEEL|)
     \item Create event with robot.every(<condition>).do(<action>)
-    \item Poses are managed explicitely and can easily be
+    \item Poses are managed explicitly and can easily be
         transformed from one reference frame to another one
         (integrates with ROS TF when available).
     \item Extensive logging support to debug and replay
         experiments.
 \end{itemize}
 
-\section{Example}
+\subsection{Core concepts}
+
+\pyRobots core concepts are simple: on one hand, the user creates a
+\textbf{robot} as an instance of a \python|GenericRobot|, that encapsulates the
+different low-level \textbf{controllers} (proxies to actuators, typically
+provided by a middleware like ROS) and the \textbf{state} of the robot
+(typically a set proxies to the sensors, or a connector to a database, etc.).
+
+On the other hand, the user creates as many high-level \textbf{actions} as
+desired, as regular Python functions. Actions are automatically added to the
+\textbf{robot}, and can access its state and controllers to perform actual
+physical actions.
+
+The user can list \textbf{events} that the \textbf{robot} must monitor, and
+attach callback to them.
+
+Finally, the user can declare arbitrary \textbf{resources}, usually
+corresponding to the robot components (for instance, the wheels, the camera,...)
+and guarantee exclusive access to the required resource to specific actions.
+
+\subsection{Asynchronous actions}
+
+As they will be executed in independent
+threads, these functions may block or never return (typically useful to
+implement lasting background behaviours).
+
+Actions can also call each-other, allowing decomposition of
+complex tasks into sub-actions and eventually atomic actions.
+
+
+\subsection{Events}
+
+\subsection{Resources management}
+
+\subsection{Uniform management of rigid transformations and frames}
+
+\subsection{Developer support: logging, debugging, introspection}
+\label{}
+
+\section{Implementation and Example}
 
 %\begin{listing}[ht]
 
