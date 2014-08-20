@@ -23,10 +23,15 @@
 \renewcommand{\theFancyVerbLine}{
   \sffamily\textcolor[rgb]{0.5,0.5,0.5}{\scriptsize\arabic{FancyVerbLine}}}
 
+  \newminted{python}{frame=lines,
+                     linenos=true,
+                     gobble=4,
+                     fontsize=\scriptsize}
+
 \graphicspath{{figs/}}
 \DeclareGraphicsExtensions{.pdf,.jpg,.png}
 
-\usepackage{fixme}
+\usepackage[draft]{fixme}
 
 \newcommand{\ie}{{\textit{i.e.\ }}}
 \newcommand{\cf}{{\textit{cf\ }}}
@@ -35,12 +40,12 @@
 
 
 \title{\LARGE \bf
-    {\sc pyRobots}, a executive environment for robot control
+    \pyRobots, a toolkit for robot executive control
 }
 
 \author{Séverin Lemaignan, Anahita Hosseini and Pierre Dillenbourg\\
 Computer-Human Interaction in Learning and Instruction \\
-Ecole Polytechnique Fédérale de Lausanne (EPFL) \\
+École Polytechnique Fédérale de Lausanne (EPFL) \\
 CH-1015 Lausanne, Switzerland \\
 {\tt\small firstname.last@epfl.ch}
 }
@@ -109,7 +114,10 @@ It also offers support for robot resources management (locking of ``parts'' of
 the robot) and uniform manipulation of 6D poses (that integrates transparently
 with other tools like ROS's TF when available).
 
-\section{Overview of the framework}
+\section{Concepts}
+
+Before introducing and explaining step-by-step a complete example in the next
+section, it is useful to introduce the main concepts of \pyRobots.
 
 
 \begin{itemize}
@@ -135,10 +143,8 @@ with other tools like ROS's TF when available).
 \section{Example}
 
 %\begin{listing}[ht]
-\begin{minted}[frame=lines,
-               linenos=true,
-               gobble=4,
-               fontsize=\scriptsize]{python}
+
+\begin{pythoncode}
     import time
     from robots import GenericRobot
     from robots.decorators import action, lock
@@ -173,8 +179,8 @@ with other tools like ROS's TF when available).
     @lock(WHEELS)
     @action
     def move_forward(robot):
-      """ We write action in a simple imperative, 
-          seemingly blocking way.
+      """ Actions are written in a simple imperative, 
+          blocking style.
       """
 
       # the target pose: simply x += 1.0m in the robot's 
@@ -213,7 +219,7 @@ with other tools like ROS's TF when available).
           time.sleep(0.5)
       except KeyboardInterrupt:
         pass
-\end{minted}
+\end{pythoncode}
 %\caption{Example from external file}
 %\label{listing:3}
 %\end{listing}
