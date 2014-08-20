@@ -176,7 +176,7 @@ provide an overview of the features and mechanisms.
         actions. When starting, actions will wait for resources to be
         available if needed.
     \item Supports compound resources (like \python|WHEELS == LEFTWHEEL + RIGHTWHEEL|)
-    \item Create event with robot.every(<condition>).do(<action>)
+    \item Create event with \python|robot.every(<condition>).do(<action>)|
     \item Poses are managed explicitly and can easily be
         transformed from one reference frame to another one
         (integrates with ROS TF when available).
@@ -206,13 +206,43 @@ and guarantee exclusive access to the required resource to specific actions.
 
 \subsection{Asynchronous actions}
 
-As they will be executed in independent
-threads, these functions may block or never return (typically useful to
-implement lasting background behaviours).
+\emph{Actions} in \pyRobots are always asynchronous. They are implemented as
+\emph{futures} (also known as \emph{promises}) and therefore executed in
+independent threads. To the developer, however, they appear as regular Python
+function, simply annotated with the \python|@action| decorator, and are invoked
+as any other function.  Since they are asynchronous, these functions may
+perfectly block or even never return (typically useful to implement lasting
+background behaviours).
 
-Actions can also call each-other, allowing decomposition of
-complex tasks into sub-actions and eventually atomic actions.
+Actions can also call each-other, allowing natural decomposition of complex
+tasks into sub-actions and eventually atomic actions.
 
+\paragraph{Signaling} Running behaviours often need to be paused of cancelled.
+This poses a particular challenge in robotics, because before suspending an
+action, one often want to bring back the robot in some form of rest state (you
+would not want to suddenly cancel a \python|walk| action in the middle of a step
+without first bringing back the foot to the ground).
+
+\pyRobots addresses this issue by the mean of signals, and extends standard
+Python thread into \emph{signaling threads}. Listing~\ref{lst:signals}
+illustrates this mechanism.
+
+\begin{listing}[H]
+\begin{pythoncode}
+    @action
+    def my_action(robot):
+      try:
+        robot.do_something_dangerous()
+      except ActionCancelled:
+        robot.go_back_to_rest_pose()
+
+    action = robot.my_action()
+    time.sleep(1)
+    action.cancel()
+\end{pythoncode}
+\caption{Handling a cancellation signal}
+\label{lst:signals}
+\end{listing}
 
 \subsection{Events}
 
