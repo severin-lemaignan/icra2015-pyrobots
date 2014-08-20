@@ -23,10 +23,12 @@
 \renewcommand{\theFancyVerbLine}{
   \sffamily\textcolor[rgb]{0.5,0.5,0.5}{\scriptsize\arabic{FancyVerbLine}}}
 
-  \newminted{python}{frame=lines,
-                     linenos=true,
-                     gobble=4,
-                     fontsize=\scriptsize}
+\newminted{python}{frame=lines,
+                    linenos=true,
+                    gobble=4,
+                    fontsize=\scriptsize}
+
+\newmintinline[python]{python}{fontsize=\footnotesize}
 
 \graphicspath{{figs/}}
 \DeclareGraphicsExtensions{.pdf,.jpg,.png}
@@ -164,16 +166,15 @@ section, it is useful to introduce the main concepts of \pyRobots.
 
 \begin{itemize}
     \item Turns any Python function into a background action with the decorator
-        @action.
+        \python|@action|.
     \item Robot actions are non-blocking by default: they are instanciated as
         futures (lightweight threads),
     \item Actions can be cancelled at any time via signals (the
-        ActionCancelled signal is raised).
-    \item Lock specific resources with a simple @lock(...) in front of the
+        \python|ActionCancelled| signal is raised).
+    \item Lock specific resources with a simple \python|@lock(...)| in front of the
         actions. When starting, actions will wait for resources to be
         available if needed.
-    \item Supports compound resources (like WHEELS == LEFTWHEEL +
-        RIGHTWHEEL)
+    \item Supports compound resources (like \python|WHEELS == LEFTWHEEL + RIGHTWHEEL|)
     \item Create event with robot.every(<condition>).do(<action>)
     \item Poses are managed explicitely and can easily be
         transformed from one reference frame to another one
