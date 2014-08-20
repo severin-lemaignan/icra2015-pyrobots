@@ -19,14 +19,15 @@
 \usepackage{hyperref}
 \usepackage{url}
 
-\usepackage{minted}
+\usepackage[cache]{minted}
 \renewcommand{\theFancyVerbLine}{
   \sffamily\textcolor[rgb]{0.5,0.5,0.5}{\scriptsize\arabic{FancyVerbLine}}}
 
 \newminted{python}{frame=lines,
                     linenos=true,
                     gobble=4,
-                    fontsize=\scriptsize}
+                    fontsize=\scriptsize,
+                    xleftmargin=1.8em}
 
 \newmintinline[python]{python}{fontsize=\footnotesize}
 
@@ -38,7 +39,7 @@
 \newcommand{\ie}{{\textit{i.e.\ }}}
 \newcommand{\cf}{{\textit{cf\ }}}
 \newcommand{\eg}{{\textit{e.g.\ }}}
-\newcommand{\pyRobots}{{{\sc pyRobots}}}
+\newcommand{\pyRobots}{\textsc{pyRobots}\ }
 
 
 \title{\LARGE \bf
@@ -293,7 +294,9 @@ section, it is useful to introduce the main concepts of \pyRobots.
         \centering
         \includegraphics[width=0.9\columnwidth]{ranger-side}
         \caption{Infants playing freely (!) with an EPFL's \emph{Ranger} robot.
-        The behaviour of the robot is controlled with \pyRobots}
+        The behaviour of the robot is controlled with \pyRobots. It sustained an
+        average of 70 actions triggered by minute over more than an hour,
+        with peaks at 200 actions/minute.}
         \label{expe-nursery}
 \end{figure}
 
