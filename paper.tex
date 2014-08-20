@@ -69,24 +69,66 @@ CH-1015 Lausanne, Switzerland \\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}
 
+Orchestrating the activity of a robot is a central issue of robotics: \emph{what
+to do when?} Traditionally, in the famous 3-layer architectures~\fixme{ref?},
+this function is implemented in the so-called \emph{deliberative layer} where
+decisions are made based on perceptions and on the current internal state, and
+executed by sending orders to a \emph{functional layer}.
 
-A set of software helpers to write high-level robot controllers.
+While individual decision-making components (like task planners) are studied in
+(relative) isolation since years, the \emph{orchestration} issue, with questions
+like \textit{When to start them? Which one should be selected? How to react to a
+new situation in a timely manner?} remains difficult to address in a generic
+way.
 
-\emph{Not} a middleware: it connects to one or several middleware to actually
-perform actions.
+Many approaches have been devised (we review them in the next section) that
+include \emph{Finite State Machines} (FSM), domain-specific languages (in
+particular, logic languages) or agent-based frameworks.
 
-The toolkit does not aim at formal verifiability: no contribution in this field.
+These tools adopt principled approaches, often with solid theoretical
+contributions. However, it seems that none of them gained broad acceptance in
+the robotic community, and many of us resort to write ad-hoc scripts, suitable
+for a single application/demonstration/experiment and neither reliable nor
+extensible.
 
+We hypothesize that the software architecture design that these tools enforce,
+combined with their general lack of practicality (unfamiliar language; lack of
+bindings for a given robot or middleware; difficulty to install or setup;
+non-trivial deployment) explain this low level of acceptance more than any
+particular intrinsic weaknesses.
 
+This article introduces our attempt at designing an unobtrusive execution control
+toolkit, that aims at addressing the \emph{practicality} issue: it has been
+designed and implemented from the bottom-up, starting from actual needs when
+running complex robots in largely unpredictable scenarios (typically,
+loosely constrained human-robot interactions), and in the real world.
+
+Instead of an \emph{environment} or a \emph{framework}, which would suggest
+strong design and development constraints, \pyRobots can be conceived as a set of
+powerful software helpers to write parallel, event-based, high-level robot
+controllers.
+
+It is written for and in Python, which ensure familiarity, fast development
+cycles and broad support for interfacing with existing robots and middlewares.
+This must be emphasized: \pyRobots is \emph{not} a middleware. It purposefully
+provides no mechanisms to connect to other modules or components. It instead
+\emph{uses} one (or several) middleware to actually communicate with the robot
+and perform actions.
+
+One the other hand, \pyRobots does not provide formal models or verifiability:
+in its current state, it does not attempt to contribute in this field. It
+focuses instead on providing unobtrusive tools to control robots in environments
+that require carrying out many tasks in parallel, in an unpredictable,
+event-based manner.
 
 \subsection{Related Work: Robot Execution Control}
 
 \begin{itemize}
-    \item FSM -> SMACH
-    \item agent-based approaches -> ROAR
-    \item logic languages -> OpenPRS, CRAM
-    \item dedicated control languages -> URBI
-    \item similar attempts: teer (co-routine -> cooperative multi-threading)
+    \item FSM: SMACH
+    \item agent-based approaches: ROAR
+    \item logic languages: OpenPRS, CRAM
+    \item dedicated control languages: URBI
+    \item similar attempts: teer (co-routine: cooperative multi-threading)
     \item and the vast majority: ad-hoc scripts
 \end{itemize}
 
