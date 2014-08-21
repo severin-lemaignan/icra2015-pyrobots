@@ -161,9 +161,11 @@ with other tools like ROS's TF when available).
 
 \section{Concepts and Overview}
 
-Before introducing and explaining step-by-step a complete working example in the next
-section, it is useful to first introduce the main concepts of \pyRobots, and
-provide an overview of the features and mechanisms.
+Before introducing and explaining step-by-step a complete working example in the
+next section, it is useful to first introduce the main concepts of \pyRobots,
+and provide an overview of the features and mechanisms. Since \pyRobots is an
+open-source software, the interested reader can also refer to the source code,
+available here:~\url{https://github.com/chili-epfl/pyrobots}.
 
 \begin{itemize}
     \item Turns any Python function into a background action with the decorator
@@ -340,7 +342,60 @@ illustrates this mechanism.
 
 \section{Experimental Deployments}
 
-\subsection{Platforms}
+The development of \pyRobots started in 2011, driven by the requirements of a
+18-min long theatre performance between a human actor and a robot. Since that time, the toolkit has
+iteratively matured, and has been deployed and used on several projects and
+platforms. We first briefly recap these deployments with references to the
+corresponding publications, and then present our latest study, in a nursery,
+that recently acted as a stress-test for the library.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{table}[ht!]
+\begin{center}
+\begin{tabular}{p{0.9\columnwidth}}
+\hline
+    {\bf Manipulation} \\
+     {\tt attachobject}, {\tt basicgive}, {\tt basictake}, {\tt close\_gripper}, {\tt configure\_grippers}, {\tt grab\_gripper}, {\tt handover}, {\tt hide}, {\tt open\_gripper}, {\tt pick}, {\tt put}, {\tt put\_accessible}, {\tt release\_gripper}, {\tt show}, {\tt take} \\
+\hline
+    {\bf Gaze control} \\
+     {\tt glance\_to}, {\tt look\_at}, {\tt sweep}, {\tt switch\_active\_stereo\_pair}, {\tt track}, {\tt cancel\_track} \\
+\hline
+    {\bf Navigation} \\
+     {\tt carry}, {\tt follow}, {\tt cancel\_follow}, {\tt goto}, {\tt moveclose}, {\tt waypoints} \\
+\hline
+    {\bf Local navigation} \\
+     {\tt dock}, {\tt rotate}, {\tt translate} \\
+\hline
+    {\bf Posture configuration} \\
+     {\tt extractpose}, {\tt idle}, {\tt manipose}, {\tt movearm}, {\tt rest}, {\tt setpose}, {\tt settorso}, {\tt tuckedpose} \\
+\hline
+\end{tabular}
+\end{center}
+\caption{Examples of \pyRobots actions, mostly stemming from experiments involving
+    the PR2 robot.}
+
+\label{pyrobots_actions}
+\end{table}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\paragraph{Roboscopie} The first complex deployment scenario for \pyRobots was indeed a theatre
+performance entitled \emph{Roboscopie}~\cite{lemaignan2012roboscopie}. The
+toolkit was created out of the need to control a complex robot (a Willow Garage
+PR2) in a structured way, as required for a live performance with a
+human\footnote{The original \pyRobots script used for the performance can be
+accessed from~\url{http://www.laas.fr/roboscopie}. Note that this script does
+not reflect anymore the toolkit usage.}
+
+A total of 47 \pyRobots actions were written for this event
+(Table~\ref{pyrobots_actions} gives a few examples), and the toolkit proved to
+be especially convenient to interleave calls to both ROS-based and {\sc
+GenoM}-based\footnote{{\sc GenoM} is software component as well as a middleware
+developed at LAAS-CNRS} components through their respective Python bindings.
+
+\pyRobots also allowed us to retain the \emph{rapid prototyping} convenience of a
+script language, essential for the robot to ``practise'' and adapt to the
+vision of the director.
 
 \begin{itemize}
     \item PR2, with ROS and pocolibs
@@ -348,7 +403,6 @@ illustrates this mechanism.
     \item Ranger with Aseba and ROS
 \end{itemize}
 
-\subsection{Experiments and studies}
 
 \begin{itemize}
     \item roboscopie
@@ -356,6 +410,13 @@ illustrates this mechanism.
     \item CoWriter
     \item Ranger
 \end{itemize}
+
+\begin{figure}
+        \centering
+        \includegraphics[width=0.9\columnwidth]{cowriter}
+        \caption{Children teaching An Aldebaran Nao interacting with }
+        \label{expe-cowriter}
+\end{figure}
 
 \paragraph{Stress-test in a nursery}
 
