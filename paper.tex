@@ -18,6 +18,7 @@
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{url}
+\usepackage{amsmath}
 
 \usepackage[cache]{minted}
 \renewcommand{\theFancyVerbLine}{
@@ -168,17 +169,10 @@ open-source software, the interested reader can also refer to the source code,
 available here:~\url{https://github.com/chili-epfl/pyrobots}.
 
 \begin{itemize}
-    \item Turns any Python function into a background action with the decorator
-        \python|@action|.
-    \item Robot actions are non-blocking by default: they are instanciated as
-        futures (lightweight threads),
-    \item Actions can be cancelled at any time via signals (the
-        \python|ActionCancelled| signal is raised).
     \item Lock specific resources with a simple \python|@lock(...)| in front of the
         actions. When starting, actions will wait for resources to be
         available if needed.
     \item Supports compound resources (like \python|WHEELS == LEFTWHEEL + RIGHTWHEEL|)
-    \item Create event with \python|robot.every(<condition>).do(<action>)|
     \item Poses are managed explicitly and can easily be
         transformed from one reference frame to another one
         (integrates with ROS TF when available).
@@ -192,7 +186,8 @@ available here:~\url{https://github.com/chili-epfl/pyrobots}.
 \textbf{robot} as an instance of a \python|GenericRobot|, that encapsulates the
 different low-level \textbf{controllers} (proxies to actuators, typically
 provided by a middleware like ROS) and the \textbf{state} of the robot
-(typically a set proxies to the sensors, or a connector to a database, etc.).
+(typically a set proxies to the sensors, or a connector to a database, etc.,
+accessed through a dictionary-like object).
 
 On the other hand, the user creates as many high-level \textbf{actions} as
 desired, as regular Python functions. Actions are automatically added to the
@@ -212,29 +207,32 @@ and guarantee exclusive access to the required resource to specific actions.
 \emph{futures} (also known as \emph{promises}) and therefore executed in
 independent threads. To the developer, however, they appear as regular Python
 function, simply annotated with the \python|@action| decorator, and are invoked
-as any other function.  Since they are asynchronous, these functions may
+like any other function.  Since they are asynchronous, these functions may
 perfectly block or even never return (typically useful to implement lasting
 background behaviours).
 
-Actions can also call each-other, allowing natural decomposition of complex
-tasks into sub-actions and eventually atomic actions.
+Actions can also call each other, allowing natural decomposition of complex
+tasks into sub-actions and atomic actions.
 
-\paragraph{Signaling} Running behaviours often need to be paused of cancelled.
-This poses a particular challenge in robotics, because before suspending an
-action, one often want to bring back the robot in some form of rest state (you
-would not want to suddenly cancel a \python|walk| action in the middle of a step
-without first bringing back the foot to the ground).
+\paragraph{Signaling} Behaviours often need to be paused of cancelled.  This
+raises an issue that needs to be addressed in robotics: before suspending an
+action, one often wants to first bring back the robot into some form of rest
+state (\eg one would not want to suddenly cancel a \python|walk| action in the
+middle of a step without first bringing back the foot to the ground).
 
-\pyRobots addresses this issue by the mean of signals, and extends standard
-Python thread into \emph{signaling threads}. Listing~\ref{lst:signals}
-illustrates this mechanism.
+\pyRobots addresses this issue through signals, and extends standard
+Python thread into \emph{signaling threads}, relying on Python's usual syntax
+for exception handling. Listing~\ref{lst:signals}
+illustrates this mechanism. The action is instantiated and started at line 8,
+and cancelled at line 10. This send a \python|ActionCancelled| signal to the
+action that the user can handle using an \python|except| statement.
 
 \begin{listing}[H]
 \begin{pythoncode}
     @action
     def my_action(robot):
       try:
-        robot.do_something_dangerous()
+        robot.do_something_long()
       except ActionCancelled:
         robot.go_back_to_rest_pose()
 
@@ -246,18 +244,136 @@ illustrates this mechanism.
 \label{lst:signals}
 \end{listing}
 
+Pausing actions is more complex (the action internal state must be saved, a mean
+to resume the action where it was interrupted must be provided, the user must be
+given ways to code transition behaviours when pausing and resuming) and is not
+currently supported by \pyRobots.
+
 \subsection{Events}
+
+Sharing the same syntax with URBI, events in \pyRobots can by monitored through
+the methods \python|on| (one shot event) and \python|whenever| (continuous event
+monitoring). Event conditions can be either a predicate (that must take as
+single argument the robot instance) or a pair of $\{\text{state member},
+\text{condition}\}$ with condition in $\{\text{value}=x, \text{become}=x,
+\text{below}=x, \text{above}=x, \text{decrease}=x, \text{increase}=x\}$. An
+example of event usage can be seen at line 67 of listing~\ref{mwe}.
+
+When the event condition is verified, the callback (usually, an action) is
+invoked from the event monitor thread.
 
 \subsection{Resources management}
 
-\subsection{Uniform management of rigid transformations and frames}
+Usually, physical robot resources (mainly actuators, but possibly sensors as
+well) require exclusive use (it is seldom desirable that two different actions
+control the wheels of a robot at the same time). 
+
+To leave full control regarding the required resource modeling granularity, the
+programmer define them himself, either as stand-alone resources or as compound
+resources (listing~\ref{lst:resources}).
+
+\begin{listing}[H]
+\begin{pythoncode}
+    L_ARM = Resource()
+    R_ARM = Resource()
+    ARMS = CompoundResource(L_ARM, R_ARM)
+
+    @action
+    @lock(ARMS)
+    def lift_box(robot):
+        #...
+
+    @action
+    @lock(L_ARM)
+    def wave_hand(robot):
+        #...
+
+    @action
+    @lock(L_ARM, wait=False)
+    def scratch_head(robot):
+        #...
+
+    robot.lift_box()
+    robot.wave_hand() # waits until lift_box is over
+    robot.scratch_head() # skipped
+
+\end{pythoncode}
+\caption{Resource usage is defined at the action-level, through annotations.}
+\label{lst:resources}
+\end{listing}
+
+The user then annotates the actions with the (possibly multiple) resources they
+require (lines 6, 11 and 16 of listing~\ref{lst:resources}). When executed, the
+action acquires a lock on the resource (and all dependent resources in the case
+of a compound resource) which is released upon action completion. In the
+meantime, other actions requiring the same resource will either wait until the
+resource is release (line 21) or be skipped (line 22) if the \python|@lock|
+annotation specifies not to wait (line 16).
+
+
+\subsection{Uniform management of poses and rigid transformations}
+
+Managing poses, transformations, frames in real-world scenarios is not an easy
+task, mainly because it seems that every single library, middleware or robotic
+platform rely on its own conventions (rotation representations, in particular,
+are a constant source of frustration, having to jump all the time between
+quaternions, one of the 23 Euler conventions, rotation matrices, Rodrigues,
+yaw-pitch-roll notation...). Within the ROS ecosystem, the Transform Library
+(tf,~\cite{foote2013tf}) has played a major role to make it convenient to work
+with frames, and poses can always be expressed and shared in the most convenient
+local frame, tf taking care of required intermediate transformation.
+
+\pyRobots offers a similar approach \emph{within} the control script, adding a
+pinch of syntactic sugar to make poses and frame management transparent for the
+high-level action controller.
+
+As illustrated in listing~\ref{lst:poses}, poses can be flexibly defined by a
+simple frame name, by a triple $\{x, y, z\}$ (default frame {\tt map} is then
+assumed), by a 4-tuple $\{x, y, z, frame\}$, by a 6-tuple $\{x, y, z, rx, ry,
+rz\}$ (using $sxyz$ Euler convention), by a 7-tuple $\{x, y, z, rx, ry, rz,
+frame\}$, by a 7-tuple $\{x, y, z, qx, qy, qz, qw\}$, by a 8-tuple $\{x, y, z,
+qx, qy, qz, qw, frame\}$ or by a dictionary that defines any of these 8 values.
+Internally, \pyRobots normalizes and stores the poses in their full 8-tuple
+expansion.
+
+\begin{listing}[H]
+    \begin{pythoncode*}{linenos=false, xleftmargin=0em}
+
+    # {'x':0., 'y':0., 'z':0., 
+    #  'qx':0., 'qy':0., 'qz':0., 'qw':1., 
+    #  'frame': 'handL'}
+    robot.poses["handL"]
+
+    # {'x':1., 'y':0., 'z':0., 
+    #  'qx':0., 'qy':0., 'qz':0., 'qw':1., 
+    #  'frame': 'map'}
+    robot.poses[(1.0, 0.0, 0.0)]
+
+    # {'x':0., 'y':0., 'z':1., 
+    #  'qx':0., 'qy':0., 'qz':0.0998, 'qw':0.0995, 
+    #  'frame': 'handL'}
+    robot.poses[{'z':1.0, 'rz':0.2, 'frame':'handL'}]
+
+\end{pythoncode*}
+\caption{Examples of poses normalizing.}
+\label{lst:poses}
+\end{listing}
+
+Using helper methods like \python|robot.poses.inframe(<pose>, <other frame>)| or
+\python|robot.poses.pantilt(<pose>, <ref frame>)|, the programmer can then
+transform a given pose into a different frame or different representation.
+
+These transformations are directly computed, but \pyRobots also takes advantage
+of middleware-specific infrastructure (when available) to provide known frames.
+ROS TF, Aldebaran's {\tt NAOqi} frame conventions, etc. are used when available
+through specializations of the \pyRobots \python|PoseManager| class.
 
 \subsection{Developer support: logging, debugging, introspection}
 \label{}
 
-\section{Implementation and Example}
+\section{Detailed Example}
 
-%\begin{listing}[ht]
+\begin{listing}[h!]
 
 \begin{pythoncode}
     import time
@@ -275,8 +391,8 @@ illustrates this mechanism.
         super(MyRobot, self).__init__()
 
         # create (and set) one element in the robot's state.
-        # Here a bumper.
-        self.state.my_bumper = False
+        # Here a sonar.
+        self.state["sonar"] = 10.
 
         # do whatever other initialization you need :-)
 
@@ -326,8 +442,7 @@ illustrates this mechanism.
       # Shortcut to configure the std Python logging system
       robot.debug()
 
-      robot.whenever("my_bumper", value = True)
-                                    .do(move_forward)
+      robot.whenever("sonar", below = 0.3).do(move_forward)
 
       try:
         while True:
@@ -335,9 +450,9 @@ illustrates this mechanism.
       except KeyboardInterrupt:
         pass
 \end{pythoncode}
-%\caption{Example from external file}
-%\label{listing:3}
-%\end{listing}
+\caption{Full example of a \pyRobots application.}
+\label{mwe}
+\end{listing}
 
 
 \section{Experimental Deployments}
