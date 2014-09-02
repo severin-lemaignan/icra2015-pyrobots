@@ -594,19 +594,103 @@ vision of the director.
 
 \paragraph{Stress-test in a nursery}
 
+We organized in June 2014 a pilot study in a kindergarten (on campus) to
+stress-test the hardware and software of the Ranger
+robot~\cite{mondada2014ranger}. The Ranger robot is an autonomous robot designed
+for interaction with children. As it was primarily designed to support children
+with tidying up, it is shaped as a wooden ``box on wheels''
+(Figure~\ref{expe-nursery}). Hardware-wise, it features an RGB-D camera, IR
+sensors, a range and bearing sensor, a physical front bumper, a scale, a
+removable pacifier (used as a soft on/off switch by the children) and it is
+covered with capacitive tactile panels. The wooden panels cover 186 RGB LEDs,
+enabling various light patterns, it can play sounds, the two eyes can be fully
+controlled (2 DoFs pupils and actuated eye-lids). Wheel controllers are designed
+such as they switch to freewheel as soon as the robot is pushed by the children.
+The robot is powered by an embedded Gumstix Overo (ARM7l) board running a custom
+Linux image, assisted by three custom microcontroller boards (for low-level
+hardware interfacing).
+
+Software-wise, all the user-facing behaviours are implemented with \pyRobots,
+and the communication with the hardware is abstracted through a mix of ROS
+and Aseba~\cite{magnenat2011aseba} nodes.
+
 \begin{figure}
         \centering
         \includegraphics[width=0.9\columnwidth]{ranger-side}
         \caption{Infants playing freely (!) with an EPFL's \emph{Ranger} robot.
-        The behaviour of the robot is controlled with \pyRobots. It sustained an
-        average of 70 actions triggered by minute over more than an hour,
-        with peaks at 200 actions/minute.}
+        The behaviour of the robot is controlled with \pyRobots.}
         \label{expe-nursery}
 \end{figure}
 
+We brought two Ranger robots to a kindergarten (17 children, 3 to 4 years old),
+and after a brief introduction (showing them that removing the pacifier would
+``wake up'' the robot, and putting it back would make it ``fall asleep''), we
+invited the children to freely play with the robots and integrate them into
+their usual games. The experiment lasted 68 minutes.
+
+We purposefully designed a simple behavioural scheme
+(Listing~\ref{croquignole_no_move}): two background actions
+(\python|background_blink| and \python|look_at_touches|) run continuously, and 4
+events are monitored (pacifier added/removed, toy added and bumper hit).
+
+\begin{listing}[h!]
+
+\begin{pythoncode}
+    @action
+    def on_pacifier(robot):
+        robot.look_at_lolette()
+        robot.blink()
+        sleep = robot.fall_asleep()
+        robot.lightbar(ramp=colors.RAINBOW).wait()
+        sleep.wait()
+    
+    @action
+    def on_pacifier_removed(robot):
+        robot.light_bar(colors.from_hls(rand(0,1),0.8,1))
+        robot.wakeup().wait()
+        robot.move(0.4, v = 0.8).wait()
+        robot.idle().wait()
+    
+    @action
+    def on_bumper(robot):
+        pulse = robot.pulse_row(0, (128, 0, 128))
+        while abs(robot.state.v) > 0.01:
+            robot.sleep(0.2)
+        pulse.cancel()
+    
+    @action
+    def on_toy(robot):
+        robot.playsound(SOUNDS["toy_in"])
+        robot.lightbar(ramp=colors.RAINBOW).wait()
+    
+    with Ranger() as robot:
+    
+        robot.background_blink()
+        robot.look_at_touches()
+    
+        robot.every("pacifier", becomes = True).do(on_pacifier)
+        robot.every("pacifier", becomes = False)
+                                       .do(on_pacifier_removed)
+        robot.every("scale", increase = 0.3).do(on_toy)
+        robot.every("bumper", becomes = True).do(on_bumper)
+    
+        while True:
+            time.sleep(0.1)
+\end{pythoncode}
+\caption{Source of the high-level behaviours running on the robots during the
+nursery pilot (some behaviours like battery management have been omitted for
+clarity).}
+\label{croquignole_no_move}
+\end{listing}
+
+
+
 \begin{figure}
     \resizebox{\columnwidth}{!}{\input{croquignole-expe}}
-    \caption{Events fired and actions triggered during the 68min experiment.}
+    \caption{Events fired and actions started per minute, over the 68 min-long
+    experiment. The robot sustains an average of 70 actions triggered by minute over
+    more than an hour, with peaks at 200 actions/minute.}
+
 \end{figure}
 
 \section{Conclusion and Future Work}

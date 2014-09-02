@@ -1,7 +1,7 @@
 set terminal epslatex
 set output "croquignole-expe.tex"
 
-set style line 1 lt 2 lc rgb "blue" lw 4
+set style line 1 lt 1 lc rgb "blue" lw 5
 
 set grid
 
