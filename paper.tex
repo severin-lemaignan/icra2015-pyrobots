@@ -127,14 +127,70 @@ event-based manner.
 
 \subsection{Related Work: Robot Execution Control}
 
-\begin{itemize}
-    \item FSM: SMACH
-    \item agent-based approaches: ROAR
-    \item logic languages: OpenPRS, CRAM
-    \item dedicated control languages: URBI
-    \item similar attempts: teer (co-routine: cooperative multi-threading)
-    \item and the vast majority: ad-hoc scripts
-\end{itemize}
+Any robotic experiment requires a certain amount of high-level control to
+supervise the robot behaviour, and, expectedly, many projects have attempted to
+design and provide tools for this task.  We focus this review on \emph{tools
+dedicated to the explicit implementation of high-level behaviours}, excluding
+complete control stacks (that would typically include a middleware and hardware
+abstractions), meta-tools (like component generators or model checkers) and
+(semi-)automatic techniques (like learning by demonstration).  In contrast with
+middlewares for which the robotic community relies on a few \emph{de-facto}
+standards (ROS, YARP, OpenRTM), we want to underline that no such widely-used
+softwares exist for execution control, and we believe that most of today's robot
+behaviours are implemented as \emph{ad-hoc} scripts.
+
+We identify three categories of execution control tools: \emph{finite state
+machines}, \emph{agent-based} controllers and
+\emph{domain-specific languages} (DSL), including \emph{embedded domain-specific
+languages} (eDSL,~\cite{joyeux2011robot}). These categories overlap to a certain
+extend, but they should reasonably reflect the motivational concepts/ideas that
+gave birth to the specific tools.
+
+\paragraph{Finite State Machines} (or FSM) are the most well-known paradigm to
+describe how a robot goes from one \emph{state} (typically, performing an
+action) to another state when some condition becomes true or some event is
+triggered. Common FSM implementations in robotics include {\sc
+rfSM}~\cite{klotzbucher2010orocos} (part of the OROCOS framework) and
+{\sc smach}~\cite{bohren2010smach}. State machine semantics are well
+understood~\cite{harel1996statemate} and provide a well structured model,
+suitable for meta-reasoning (like verification). However, FSM are also
+acknowledged to be ill-suited for complex systems (where the number of state
+easily ``explodes'') or relatively dynamic and unpredictable environments where
+it can prove difficult to \textit{a priori} exhaustively list transitions.
+
+
+\paragraph{Agent-based controllers}
+
+temporal planning/temporal constraints: T-REX~\cite{mcgann2007trex} -> sensing-planning-acting
+
+ROAR: ~\cite{degroote2011roar}
+
+\paragraph{Domain-specific languages}
+
+Domain-specific languages (DSL), in the widest sense, represent the largest body
+of literature on high-level behaviour programming. They can either be ``actual''
+domain-specific languages like PRS~\cite{ingrand1996prs},
+RPL~\cite{mcdermott1993reactive}, Golog~\cite{levesque1997golog} (and its
+derivative like {\sc ReadyLOG}~\cite{ferrein2007robot} or, more recently,
+URBI~\cite{baillie2005urbi}; or what Joyeux calls \emph{embedded}
+DSL~\cite{joyeux2011robot}: extensions of existing languages (typically, dynamic
+languages like Python or Ruby, or logic languages like Prolog) to provide
+high-level paradigms and control structures well suited to the programming of
+robots. {\sc cram}~\cite{beetz2010cram} (based on Lisp and Prolog), {\sc
+roby}~\cite{joyeux2009plan} (based on Ruby), {\sc
+teer}~\footnote{\url{http://wiki.ros.org/executive_teer}} (based on Python), are
+examples of such eDSL.
+
+Projects like PRS, Golog or {\sc cram} have large scopes:
+
+
+\pyRobots positions itself in this landscape as a lightweight eDSL (in a similar
+fashion to {\sc roby} or {\sc teer}), that focuses on high-level behaviours
+implementation. It seeks unobstrusive interaction with the other components of
+the robot software stack, using Python as ubiquitous binding language. Similar
+to URBI, it focuses on transparent preemptive concurrency and event-based programming.
+Also, \pyRobots' model favours hierarchical task composition over plans, and does not
+provide by itself any task planning service, delegating this to external tools.
 
 \subsection{Guiding principles}
 
@@ -295,7 +351,8 @@ resources (listing~\ref{lst:resources}).
 
     robot.lift_box()
     robot.wave_hand() # waits until lift_box is over
-    robot.scratch_head() # skipped
+    robot.scratch_head() # skipped if lift_box 
+                         # is still running
 
 \end{pythoncode}
 \caption{Resource usage is defined at the action-level, through annotations.}
@@ -339,20 +396,20 @@ expansion.
 \begin{listing}[H]
     \begin{pythoncode*}{linenos=false, xleftmargin=0em}
 
-    # {'x':0., 'y':0., 'z':0., 
-    #  'qx':0., 'qy':0., 'qz':0., 'qw':1., 
-    #  'frame': 'handL'}
     robot.poses["handL"]
+    # -> {'x':0., 'y':0., 'z':0., 
+    #    'qx':0., 'qy':0., 'qz':0., 'qw':1., 
+    #    'frame': 'handL'}
 
-    # {'x':1., 'y':0., 'z':0., 
-    #  'qx':0., 'qy':0., 'qz':0., 'qw':1., 
-    #  'frame': 'map'}
     robot.poses[(1.0, 0.0, 0.0)]
+    # -> {'x':1., 'y':0., 'z':0., 
+    #    'qx':0., 'qy':0., 'qz':0., 'qw':1., 
+    #    'frame': 'map'}
 
-    # {'x':0., 'y':0., 'z':1., 
-    #  'qx':0., 'qy':0., 'qz':0.0998, 'qw':0.0995, 
-    #  'frame': 'handL'}
     robot.poses[{'z':1.0, 'rz':0.2, 'frame':'handL'}]
+    # -> {'x':0., 'y':0., 'z':1., 
+    #    'qx':0., 'qy':0., 'qz':0.0998, 'qw':0.0995, 
+    #    'frame': 'handL'}
 
 \end{pythoncode*}
 \caption{Examples of poses normalizing.}
@@ -486,7 +543,7 @@ that recently acted as a stress-test for the library.
 \hline
 \end{tabular}
 \end{center}
-\caption{Examples of \pyRobots actions, mostly stemming from experiments involving
+\caption{Examples of \pyRobots actions, mostly extracted from experiments involving
     the PR2 robot.}
 
 \label{pyrobots_actions}
@@ -494,13 +551,14 @@ that recently acted as a stress-test for the library.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-\paragraph{Roboscopie} The first complex deployment scenario for \pyRobots was indeed a theatre
-performance entitled \emph{Roboscopie}~\cite{lemaignan2012roboscopie}. The
-toolkit was created out of the need to control a complex robot (a Willow Garage
-PR2) in a structured way, as required for a live performance with a
-human\footnote{The original \pyRobots script used for the performance can be
-accessed from~\url{http://www.laas.fr/roboscopie}. Note that this script does
-not reflect anymore the toolkit usage.}
+\paragraph{Roboscopie} The first complex deployment scenario for \pyRobots was
+indeed a theatre performance entitled
+\emph{Roboscopie}~\cite{lemaignan2012roboscopie}. The toolkit was created out of
+the need to control a complex robot (a Willow Garage PR2) in a structured way,
+as required for a live performance with a human\footnote{The original \pyRobots
+script used for the performance can be accessed
+from~\url{http://www.laas.fr/roboscopie}. Note that this script does not
+reflect anymore the toolkit usage.}
 
 A total of 47 \pyRobots actions were written for this event
 (Table~\ref{pyrobots_actions} gives a few examples), and the toolkit proved to
@@ -529,7 +587,8 @@ vision of the director.
 \begin{figure}
         \centering
         \includegraphics[width=0.9\columnwidth]{cowriter}
-        \caption{Children teaching An Aldebaran Nao interacting with }
+        \caption{Children teaching an Aldebaran Nao interacting how to
+        handwrite.}
         \label{expe-cowriter}
 \end{figure}
 
@@ -545,11 +604,21 @@ vision of the director.
         \label{expe-nursery}
 \end{figure}
 
-\section{Future Work}
+\section{Conclusion and Future Work}
+
+\subsection{Summary and main contributions}
+
+\begin{itemize}
+    \item strives to simplicity (from a user perspective)
+    \item Middleware independent, real-world deployments with with ROS, GenoM, NAOqi, aseba
+\end{itemize}
+
+\subsection{Future work}
 
 \begin{itemize}
     \item control mixing policies?
     \item control over action priorities
+    \item path to more complex control tool (T-REX, etc)
 \end{itemize}
 
 \section*{Acknowledgment}
@@ -557,7 +626,7 @@ vision of the director.
 This work has been supported by...
 
 \bibliographystyle{IEEEtran}
-\bibliography{IEEEabrv,biblio}
+\bibliography{pyrobots}
 
 
 \end{document}
