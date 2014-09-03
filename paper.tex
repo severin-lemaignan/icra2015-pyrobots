@@ -412,7 +412,7 @@ expansion.
     #    'frame': 'handL'}
 
 \end{pythoncode*}
-\caption{Examples of poses normalizing.}
+\caption{Examples of pose normalization.}
 \label{lst:poses}
 \end{listing}
 
@@ -428,6 +428,26 @@ through specializations of the \pyRobots \python|PoseManager| class.
 \subsection{Developer support: logging, debugging, introspection}
 \label{}
 
+Running robots in real-world, \ie dynamic and unpredictable, environments
+entails repetitive coding-testing-debugging development cycles. \pyRobots
+provides several tools to support this development phase. A special attention
+was paid to the logging infrastructure. It relies on the versatile Python
+built-in logging tools, which support configurable parallel logging streams
+(typically, a full debug stream is logged to a file while a less verbose stream
+is output on the console at run-time).
+
+\pyRobots logs are designed to allow full \emph{post-mortem} replay, and we
+provide a graphical interface to display the actions and resource usage over
+time (Figure~\ref{log_view}).
+
+Debugging and introspection support is provided at run-time through a range of
+off-the-shell Python debuggers. Remote debugging is also supported with standard
+tools like {\sc rpdb2}~\footnote{\url{http://winpdb.org}}. Thanks to the dynamic
+nature of Python, these debuggers not only provide insights on failures, but
+also provide full introspection and run-time manipulation of the application
+state.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Detailed Example}
 
 \begin{listing}[h!]
