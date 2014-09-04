@@ -456,89 +456,89 @@ also provide full introspection and run-time manipulation of the application
 state.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Detailed Example}
-
-\begin{listing}[h!]
-
-\begin{pythoncode}
-    import time
-    from robots import GenericRobot
-    from robots.decorators import action, lock
-    from robots.resources import Resource
-    from robots.signals import ActionCancelled
-
-    # create a 'lockable' resource for our robot
-    WHEELS = Resource("wheels")
-
-    class MyRobot(GenericRobot):
-
-      def __init__(self):
-        super(MyRobot, self).__init__()
-
-        # create (and set) one element in the robot's state.
-        # Here a sonar.
-        self.state["sonar"] = 10.
-
-        # do whatever other initialization you need :-)
-
-      def send_goal(self, pose):
-        # move your robot using your favorite middleware
-        print("Starting to move towards %s" % pose)
-
-      def stop(self):
-        # stop your robot using your favorite middleware
-        print("Motion stopped")
-
-      def whatever_lowlevel_method_you_need(self):
-        pass
-
-    @lock(WHEELS)
-    @action
-    def move_forward(robot):
-      """ Actions are written in a simple imperative, 
-          blocking style.
-      """
-
-      # the target pose: simply x += 1.0m in the robot's 
-      # frame. pyRobots will handle the frames 
-      # transformations as needed.
-      target = [1.0, 0., 0., "base_link"]
-
-      try:
-        robot.send_goal(target)
-
-        while(robot.pose.distance(robot.pose.myself(), 
-                                  target) > 0.1):
-            # robot.sleep is exactly like time.sleep, 
-            # except it lets the pyrobots signals pass 
-            # through.
-            robot.sleep(0.5)
-
-        print("Motion succeeded")
-
-      except ActionCancelled:
-        # if the action is cancelled, clean up your state
-        robot.stop()
-
-
-    with MyRobot() as robot:
-
-      # Turn on DEBUG logging.
-      # Shortcut to configure the std Python logging system
-      robot.debug()
-
-      robot.whenever("sonar", below = 0.3).do(move_forward)
-
-      try:
-        while True:
-          time.sleep(0.5)
-      except KeyboardInterrupt:
-        pass
-\end{pythoncode}
-\caption{Full example of a \pyRobots application.}
-\label{mwe}
-\end{listing}
-
+% \section{Detailed Example}
+% 
+% \begin{listing}[h!]
+% 
+% \begin{pythoncode}
+%     import time
+%     from robots import GenericRobot
+%     from robots.decorators import action, lock
+%     from robots.resources import Resource
+%     from robots.signals import ActionCancelled
+% 
+%     # create a 'lockable' resource for our robot
+%     WHEELS = Resource("wheels")
+% 
+%     class MyRobot(GenericRobot):
+% 
+%       def __init__(self):
+%         super(MyRobot, self).__init__()
+% 
+%         # create (and set) one element in the robot's state.
+%         # Here a sonar.
+%         self.state["sonar"] = 10.
+% 
+%         # do whatever other initialization you need :-)
+% 
+%       def send_goal(self, pose):
+%         # move your robot using your favorite middleware
+%         print("Starting to move towards %s" % pose)
+% 
+%       def stop(self):
+%         # stop your robot using your favorite middleware
+%         print("Motion stopped")
+% 
+%       def whatever_lowlevel_method_you_need(self):
+%         pass
+% 
+%     @lock(WHEELS)
+%     @action
+%     def move_forward(robot):
+%       """ Actions are written in a simple imperative, 
+%           blocking style.
+%       """
+% 
+%       # the target pose: simply x += 1.0m in the robot's 
+%       # frame. pyRobots will handle the frames 
+%       # transformations as needed.
+%       target = [1.0, 0., 0., "base_link"]
+% 
+%       try:
+%         robot.send_goal(target)
+% 
+%         while(robot.pose.distance(robot.pose.myself(), 
+%                                   target) > 0.1):
+%             # robot.sleep is exactly like time.sleep, 
+%             # except it lets the pyrobots signals pass 
+%             # through.
+%             robot.sleep(0.5)
+% 
+%         print("Motion succeeded")
+% 
+%       except ActionCancelled:
+%         # if the action is cancelled, clean up your state
+%         robot.stop()
+% 
+% 
+%     with MyRobot() as robot:
+% 
+%       # Turn on DEBUG logging.
+%       # Shortcut to configure the std Python logging system
+%       robot.debug()
+% 
+%       robot.whenever("sonar", below = 0.3).do(move_forward)
+% 
+%       try:
+%         while True:
+%           time.sleep(0.5)
+%       except KeyboardInterrupt:
+%         pass
+% \end{pythoncode}
+% \caption{Full example of a \pyRobots application.}
+% \label{mwe}
+% \end{listing}
+% 
 
 \section{Experimental Deployments}
 
@@ -737,6 +737,7 @@ clarity).}
     \item control mixing policies?
     \item control over action priorities
     \item path to more complex control tool (T-REX, etc)
+    \item investigate techniques in Python's {\sc asyncio} module
 \end{itemize}
 
 \section*{Acknowledgment}
