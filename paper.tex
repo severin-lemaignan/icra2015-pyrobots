@@ -19,6 +19,7 @@
 \usepackage{hyperref}
 \usepackage{url}
 \usepackage{amsmath}
+\usepackage{booktabs}
 
 \usepackage[cache]{minted}
 \renewcommand{\theFancyVerbLine}{
@@ -65,7 +66,18 @@ CH-1015 Lausanne, Switzerland \\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{abstract}
 
-    Blabla
+Presented is \pyRobots, a new software toolkit for the executive control of
+complex robotic systems. Borrowing ideas from previous tools like {\sc
+urbi}~\cite{baillie2005urbi}, it proposes a lightweight Python framework to
+develop (pre-emptive) concurrent and event-based executive controllers.
+
+Designed in a \emph{bottom-up} fashion, out of the need for a practical,
+unobstrusive tool suitable for rapid prototyping of complex interaction
+scenarios, \pyRobots also exposes several simple yet convenient abstractions for
+physical resources management and pose representation.
+
+Finally, and while middleware-agnostic, it features advanced integration with
+the \textit{de-facto} standard ROS middleware.
 
 \end{abstract}
 
@@ -553,22 +565,22 @@ that recently acted as a stress-test for the library.
 \begin{table}[ht!]
 \begin{center}
 \begin{tabular}{p{0.9\columnwidth}}
-\hline
+    \toprule
     {\bf Manipulation} \\
      {\tt attachobject}, {\tt basicgive}, {\tt basictake}, {\tt close\_gripper}, {\tt configure\_grippers}, {\tt grab\_gripper}, {\tt handover}, {\tt hide}, {\tt open\_gripper}, {\tt pick}, {\tt put}, {\tt put\_accessible}, {\tt release\_gripper}, {\tt show}, {\tt take} \\
-\hline
+     \midrule
     {\bf Gaze control} \\
      {\tt glance\_to}, {\tt look\_at}, {\tt sweep}, {\tt switch\_active\_stereo\_pair}, {\tt track}, {\tt cancel\_track} \\
-\hline
+     \midrule
     {\bf Navigation} \\
      {\tt carry}, {\tt follow}, {\tt cancel\_follow}, {\tt goto}, {\tt moveclose}, {\tt waypoints} \\
-\hline
+     \midrule
     {\bf Local navigation} \\
      {\tt dock}, {\tt rotate}, {\tt translate} \\
-\hline
+     \midrule
     {\bf Posture configuration} \\
      {\tt extractpose}, {\tt idle}, {\tt manipose}, {\tt movearm}, {\tt rest}, {\tt setpose}, {\tt settorso}, {\tt tuckedpose} \\
-\hline
+     \bottomrule
 \end{tabular}
 \end{center}
 \caption{Examples of \pyRobots actions, mostly extracted from experiments involving
@@ -651,11 +663,11 @@ and Aseba~\cite{magnenat2011aseba} nodes.
         \label{expe-nursery}
 \end{figure}
 
-We brought two Ranger robots to a kindergarten (17 children, mean age: 3.88
-years old, SD=0.65), and after a brief introduction (showing them that removing
-the pacifier would ``wake up'' the robot, and putting it back would make it
-``fall asleep''), we invited the children to freely play with the robots and
-integrate them into their usual games. The experiment lasted 68 minutes.
+We brought two Ranger robots to a kindergarten (17 children, age: M=3.88,
+SD=0.65), and after a brief introduction (showing them that removing the
+pacifier would ``wake up'' the robot, and putting it back would make it ``fall
+asleep''), we invited the children to freely play with the robots and integrate
+them into their usual games. The experiment lasted 68 minutes.
 
 We purposefully designed a simple behavioural scheme
 (Listing~\ref{croquignole_no_move}): two background actions
@@ -741,9 +753,12 @@ clarity).}
     \item investigate techniques in Python's {\sc asyncio} module
 \end{itemize}
 
-\section*{Acknowledgment}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Acknowledgments}
 
-This work has been supported by...
+This research was supported by the Swiss National Science Foundation through the
+National Centre of Competence in Research Robotics.
+
 
 \bibliographystyle{IEEEtran}
 \bibliography{pyrobots}
