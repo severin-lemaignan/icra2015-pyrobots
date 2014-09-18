@@ -772,21 +772,33 @@ can be expected from an executive controller.
 
 \section{Conclusion and Future Work}
 
-\subsection{Summary and main contributions}
 
-\begin{itemize}
-    \item strives to simplicity (from a user perspective)
-    \item Middleware independent, real-world deployments with with ROS, GenoM, NAOqi, aseba
-\end{itemize}
+We have presented here \pyRobots{}, a novel Python library supporting
+development of high-level executive controllers for robotics.
 
-\subsection{Future work}
+Its main features include a lightweight, unobtrusive design based on code
+annotations; a pre-emptive concurrency model allowing for proper, explicit
+handling of task cancellation; support for event-based programming; a flexible
+robot resources locking mechanism and a built-in support for 6D pose
+manipulation and transformation.
 
-\begin{itemize}
-    \item control mixing policies?
-    \item control over action priorities
-    \item path to more complex control tool (T-REX, etc)
-    \item investigate techniques in Python's {\sc asyncio} module
-\end{itemize}
+\pyRobots{} does not aim at replacing large execution control frameworks. It
+proposes instead an accessible set of tools to improve upon the all-too-common
+\emph{ad-hoc} scripts, while remaining middleware agnostic.
+
+The article also reports on several experimental deployments on four different
+kind of robots using a mixture of four different middlewares.
+
+While already four years old, several possible developments would offer
+interesting perspectives for this tool, including (a)~the support to suspend (and
+then resume) actions (which requires defining a satisfying syntax to declare
+suspend/resume behaviours within actions); (b)~mechanisms to define action
+priorities; (c)~investigate recent work on Python's {\tt asynchio} mechanisms
+(that provide reference implementation of co-routines in Python).
+
+Being available as an open-source platform, documented and easy to install, we
+believe that these development objectives may materialize soon, as well-defined
+use-cases emerge from the library's users.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section*{Acknowledgments}
