@@ -383,26 +383,24 @@ already acquired, two strategies are possible: either wait or \emph{fail fast}
 
 Managing poses, transformations, frames in real-world scenarios is not an easy
 task, mainly because it seems that every single library, middleware or robotic
-platform rely on its own conventions (rotation representations, in particular,
-are a constant source of frustration, having to jump all the time between
-quaternions, one of the 23 Euler conventions, rotation matrices, Rodrigues,
-yaw-pitch-roll notation...). Within the ROS ecosystem, the Transform Library
-(tf,~\cite{foote2013tf}) has played a major role to make it convenient to work
+platform relies on its own conventions (rotation representations, in particular,
+are a common source of inconsistencies -- quaternions, (the many) Euler
+conventions, rotation matrices, Rodrigues, yaw-pitch-roll notations being all
+rather frequent). Within the ROS ecosystem, the Transform Library ({\sc
+tf},~\cite{foote2013tf}) has played a major role to make it convenient to work
 with frames, and poses can always be expressed and shared in the most convenient
-local frame, tf taking care of required intermediate transformation.
+local frame, {\sc tf} taking care of required intermediate transformation.
 
-\pyRobots{} offers a similar approach \emph{within} the control script, adding a
-pinch of syntactic sugar to make poses and frame management transparent for the
-high-level action controller.
-
-As illustrated in listing~\ref{lst:poses}, poses can be flexibly defined by a
-simple frame name, by a triple $\{x, y, z\}$ (default frame {\tt map} is then
-assumed), by a 4-tuple $\{x, y, z, frame\}$, by a 6-tuple $\{x, y, z, rx, ry,
-rz\}$ (using $sxyz$ Euler convention), by a 7-tuple $\{x, y, z, rx, ry, rz,
-frame\}$, by a 7-tuple $\{x, y, z, qx, qy, qz, qw\}$, by a 8-tuple $\{x, y, z,
-qx, qy, qz, qw, frame\}$ or by a dictionary that defines any of these 8 values.
-Internally, \pyRobots{} normalizes and stores the poses in their full 8-tuple
-expansion.
+\pyRobots{} pose management builds on this idea to offer flexible pose
+representations \emph{within} the control scripts. Everytime a 6D pose needs to
+be specified (like a navigation goal or a target pose for an arm), it can be
+expressed as a simple frame name, by a triple $\{x, y, z\}$ (default frame {\tt
+map} is then assumed), by a 4-tuple $\{x, y, z, frame\}$, by a 6-tuple $\{x, y,
+z, rx, ry, rz\}$ (using $sxyz$ Euler convention), by a 7-tuple $\{x, y, z, rx,
+ry, rz, frame\}$, by a 7-tuple $\{x, y, z, qx, qy, qz, qw\}$, by a 8-tuple $\{x,
+y, z, qx, qy, qz, qw, frame\}$ or by a dictionary that defines any subset of
+these 8 values.  Internally, \pyRobots{} normalizes and stores the poses in
+their full 8-tuple expansion, as illustrated in listing~\ref{lst:poses}.
 
 \begin{listing}[H]
     \begin{pythoncode*}{linenos=false, xleftmargin=0em}
@@ -433,10 +431,11 @@ Using helper methods like \python|robot.poses.inframe(<pose>, <other frame>)| or
 \python|robot.poses.pantilt(<pose>, <ref frame>)|, the programmer can then
 transform a given pose into a different frame or different representation.
 
-These transformations are directly computed, but \pyRobots{} also takes advantage
-of middleware-specific infrastructure (when available) to provide known frames.
-ROS TF, Aldebaran's {\tt NAOqi} frame conventions, etc. are used when available
-through specializations of the \pyRobots{} \python|PoseManager| class.
+Required transformations are computed by \pyRobots{}, and the programmer can
+provide new ``sources'' of frame transformations through the instanciation of
+\python|FrameProviders| that takes advantage of robot- and middleware-specific
+infrastructures (for example, ROS {\sc tf}, Aldebaran's {\tt NAOqi} frame
+conventions, etc.).
 
 \subsection{Developer support: logging, debugging, introspection}
 \label{}
