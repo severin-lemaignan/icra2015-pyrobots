@@ -175,9 +175,12 @@ it can prove difficult to \textit{a priori} exhaustively list transitions.
 
 \paragraph{Agent-based controllers}
 
-temporal planning/temporal constraints: T-REX~\cite{mcgann2007trex} -> sensing-planning-acting
-
-ROAR: ~\cite{degroote2011roar}
+The T-REX architecture~\cite{mcgann2007trex} partitions the execution control
+problem into several agents, each one composed of a (temporal) planner and an
+execution layer. At run-time, the different agents are constantly synchronised
+to maintain the consistency of the global plan. ROAR~\cite{degroote2011roar}
+augments this idea with a logic mechanism allowing the system to automatically
+select and start agents depending on the task at hand.
 
 \paragraph{Domain-specific languages}
 
@@ -194,41 +197,39 @@ robots. {\sc cram}~\cite{beetz2010cram} (based on Lisp and Prolog), {\sc
 roby}~\cite{joyeux2009plan} (based on Ruby), {\sc teer}~\cite{magnenat2012teer}
 (based on Python), are examples of such eDSL.
 
-Projects like PRS, Golog or {\sc cram} have large scopes:
+\pyRobots{} positions itself in this landscape as a lightweight eDSL (in a
+similar fashion to {\sc roby} or {\sc teer}), that focuses on high-level
+behaviours implementation. It seeks unobtrusive interaction with the other
+components of the robot software stack, using Python as ubiquitous binding
+language. Similar to {\sc urbi}, it focuses on transparent pre-emptive
+concurrency and event-based programming.  Also, \pyRobots{}' model favours
+hierarchical task composition over plans, and does not provide by itself any
+task planning service, delegating this to optional external tools.
 
-
-\pyRobots{} positions itself in this landscape as a lightweight eDSL (in a similar
-fashion to {\sc roby} or {\sc teer}), that focuses on high-level behaviours
-implementation. It seeks unobtrusive interaction with the other components of
-the robot software stack, using Python as ubiquitous binding language. Similar
-to {\sc urbi}, it focuses on transparent preemptive concurrency and event-based programming.
-Also, \pyRobots{}' model favours hierarchical task composition over plans, and does not
-provide by itself any task planning service, delegating this to external tools.
-
-\subsection{Guiding principles}
-
-\begin{itemize}
-    \item Use a de-facto standard language (Python) to ease adoption (familiar to
-        many researchers, large software ecosystem, excellent integration with
-        most robotic softwares, in particular common middlewares like ROS or
-        YARP)
-    \item should be as lightweight/transparent as possible (in particular from a
-        syntax perspective) so that the
-        programmer can focus on the programming of the behaviours (I'm
-        watching you, SMACH)
-    \item should enforce as few design choices as possible. 'convention over
-        configuration' as often as possible
-\end{itemize}
-
-\subsection{Main features}
-
-Parallelism (all \emph{actions} are asynchronous) and event-based programming
-are at the core.
-
-It also offers support for robot resources management (locking of ``parts'' of
-the robot) and uniform manipulation of 6D poses (that integrates transparently
-with other tools like ROS's {\sc tf} when available).
-
+%\subsection{Guiding principles}
+%
+%\begin{itemize}
+%    \item Use a de-facto standard language (Python) to ease adoption (familiar to
+%        many researchers, large software ecosystem, excellent integration with
+%        most robotic softwares, in particular common middlewares like ROS or
+%        YARP)
+%    \item should be as lightweight/transparent as possible (in particular from a
+%        syntax perspective) so that the
+%        programmer can focus on the programming of the behaviours (I'm
+%        watching you, SMACH)
+%    \item should enforce as few design choices as possible. 'convention over
+%        configuration' as often as possible
+%\end{itemize}
+%
+%\subsection{Main features}
+%
+%Parallelism (all \emph{actions} are asynchronous) and event-based programming
+%are at the core.
+%
+%It also offers support for robot resources management (locking of ``parts'' of
+%the robot) and uniform manipulation of 6D poses (that integrates transparently
+%with other tools like ROS's {\sc tf} when available).
+%
 \section{Concepts and Overview}
 
 This section introduces the main concepts of \pyRobots{},
@@ -456,7 +457,7 @@ time (Figure~\ref{log_view}).
 
 \begin{figure}
         \centering
-        \includegraphics[width=0.8\columnwidth]{log}
+        \includegraphics[width=0.9\columnwidth]{log}
         \caption{Screenshot of \pyRobots{} log analyser, processing the log of the
         experiment presented at section~\ref{croq}}
         \label{log_view}
@@ -470,89 +471,6 @@ also provide full introspection and run-time manipulation of the application
 state.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \section{Detailed Example}
-% 
-% \begin{listing}[h!]
-% 
-% \begin{pythoncode}
-%     import time
-%     from robots import GenericRobot
-%     from robots.decorators import action, lock
-%     from robots.resources import Resource
-%     from robots.signals import ActionCancelled
-% 
-%     # create a 'lockable' resource for our robot
-%     WHEELS = Resource("wheels")
-% 
-%     class MyRobot(GenericRobot):
-% 
-%       def __init__(self):
-%         super(MyRobot, self).__init__()
-% 
-%         # create (and set) one element in the robot's state.
-%         # Here a sonar.
-%         self.state["sonar"] = 10.
-% 
-%         # do whatever other initialization you need :-)
-% 
-%       def send_goal(self, pose):
-%         # move your robot using your favorite middleware
-%         print("Starting to move towards %s" % pose)
-% 
-%       def stop(self):
-%         # stop your robot using your favorite middleware
-%         print("Motion stopped")
-% 
-%       def whatever_lowlevel_method_you_need(self):
-%         pass
-% 
-%     @lock(WHEELS)
-%     @action
-%     def move_forward(robot):
-%       """ Actions are written in a simple imperative, 
-%           blocking style.
-%       """
-% 
-%       # the target pose: simply x += 1.0m in the robot's 
-%       # frame. pyRobots will handle the frames 
-%       # transformations as needed.
-%       target = [1.0, 0., 0., "base_link"]
-% 
-%       try:
-%         robot.send_goal(target)
-% 
-%         while(robot.pose.distance(robot.pose.myself(), 
-%                                   target) > 0.1):
-%             # robot.sleep is exactly like time.sleep, 
-%             # except it lets the pyrobots signals pass 
-%             # through.
-%             robot.sleep(0.5)
-% 
-%         print("Motion succeeded")
-% 
-%       except ActionCancelled:
-%         # if the action is cancelled, clean up your state
-%         robot.stop()
-% 
-% 
-%     with MyRobot() as robot:
-% 
-%       # Turn on DEBUG logging.
-%       # Shortcut to configure the std Python logging system
-%       robot.debug()
-% 
-%       robot.whenever("sonar", below = 0.3).do(move_forward)
-% 
-%       try:
-%         while True:
-%           time.sleep(0.5)
-%       except KeyboardInterrupt:
-%         pass
-% \end{pythoncode}
-% \caption{Full example of a \pyRobots{} application.}
-% \label{mwe}
-% \end{listing}
-% 
 
 \section{Experimental Deployments}
 
@@ -567,7 +485,7 @@ in a kindergarten, that recently acted as a stress-test for the library.
     \centering
     \begin{tabular}{lll}
         \toprule
-        Study                 & Robot & Middleware \\ \midrule
+        Study                 & Robot & Middlewares \\ \midrule
         Roboscopie            & PR2       & ROS, {\sc GenoM} \\
         Interactive Grounding & PR2, LAAS-CNRS's Jido & ROS, {\sc GenoM} \\
         CoWriter              & Nao       & ROS, NAOqi  \\
@@ -584,7 +502,7 @@ The toolkit was created out of the need to control a complex robot (a Willow
 Garage PR2) in a structured way, as required for a live performance with a
 human\footnote{The original \pyRobots{} script used for the performance can be
 accessed from~\url{http://www.laas.fr/roboscopie}. Note that this script does
-not reflect anymore the toolkit usage.}
+not reflect anymore the current toolkit usage.}
 
 A total of 47 \pyRobots{} actions were written for this event
 (Table~\ref{pyrobots_actions} gives a few significant examples), and the toolkit
@@ -618,8 +536,7 @@ vision of the director.
      \bottomrule
 \end{tabular}
 \end{center}
-\caption{Examples of \pyRobots{} actions (extracted from experiments involving
-the PR2 robot).}
+\caption{Examples of \pyRobots{} actions.}
 
 \label{pyrobots_actions}
 \end{table}
@@ -635,6 +552,14 @@ language processor. \pyRobots{} was favoured over the second execution
 controller (based on PRS) for smaller studies, as a more powerful alternative to
 bare \textit{ad-hoc} scripts.
 
+\begin{figure}
+        \centering
+        \includegraphics[width=0.9\columnwidth]{cowriter}
+        \caption{Children teaching an Aldebaran Nao interacting how to
+        handwrite.}
+        \label{expe-cowriter}
+\end{figure}
+
 \subsubsection{CoWriter} The {\sc CoWriter} project~\cite{hood2015those}
 (Figure~\ref{expe-cowriter}) involves an Aldebaran Nao robot and young students
 in a \emph{learning by teaching} interaction: the children have to teach the
@@ -645,14 +570,6 @@ While the execution controller was subsequently simplified (towards a tighter
 interaction scenario), this illustrates how \pyRobots{}, relying on the
 ubiquitous Python language, can possibly blend into and interact with existing
 tools.
-
-\begin{figure}
-        \centering
-        \includegraphics[width=0.9\columnwidth]{cowriter}
-        \caption{Children teaching an Aldebaran Nao interacting how to
-        handwrite.}
-        \label{expe-cowriter}
-\end{figure}
 
 \subsubsection{Stress-test in a kindergarten}
 \label{croq}
