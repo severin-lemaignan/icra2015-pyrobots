@@ -248,9 +248,8 @@ accessed through a key-value container -- a dictionary-like object).
 
 On the other hand, the user creates as many high-level \textbf{actions} as
 desired, as regular Python functions, only annotated with the \python|@action|
-decorator. Actions are automatically added to the
-\textbf{robot}, and can access its state and controllers to perform actual
-physical actions.
+decorator. Actions are automatically added to the \textbf{robot}, and can access
+its state and controllers to perform actual physical actions.
 
 The user can list \textbf{events} that the \textbf{robot} must monitor, and
 attach callback to them.
@@ -270,8 +269,10 @@ like any other function.  Since they are asynchronous, these functions may
 perfectly block or even never return (typically useful to implement continuous
 background behaviours).
 
-Actions can also call each other, allowing natural decomposition of complex
-tasks into sub-actions and atomic actions.
+Actions can also call each other (nested actions), allowing natural
+decomposition of complex tasks into sub-actions and atomic actions (we note
+hereafter $depth$ the nesting level of an action, \ie the maximum number of
+calls to sub-actions until an atomic action is reached).
 
 \emph{Signaling:} Behaviours often need to be paused or cancelled.  This raises
 an issue that specifically needs to be addressed in robotics: before suspending
@@ -338,6 +339,13 @@ actual resources available/meaningful to a specific robot. The
 programmer define them himself, either as stand-alone or as compound
 resources (listing~\ref{lst:resources}, l.1--3).
 
+A given action can lock several distinct resources (with the corresponding
+number of \python|@lock| annotations. When executed, the
+action acquires a lock on the resource (and all dependent resources in the case
+of a compound resource) which is released upon action completion. If the lock is
+already acquired, two strategies are possible: either wait or \emph{fail fast}
+(\python|@lock(..., wait=False)|, l.16).
+
 \begin{listing}[H]
 \begin{pythoncode}
     L_ARM = Resource()
@@ -371,12 +379,6 @@ action-level, through annotations.}
 \label{lst:resources}
 \end{listing}
 
-A given action can lock several distinct resources (with the corresponding
-number of \python|@lock| annotations. When executed, the
-action acquires a lock on the resource (and all dependent resources in the case
-of a compound resource) which is released upon action completion. If the lock is
-already acquired, two strategies are possible: either wait or \emph{fail fast}
-(\python|@lock(..., wait=False)|, l.16).
 
 
 \subsection{Uniform management of poses and rigid transformations}
@@ -555,11 +557,44 @@ state.
 \section{Experimental Deployments}
 
 The development of \pyRobots{} started in 2011, driven by the requirements of a
-18-min long theatre performance between a human actor and a robot. Since that time, the toolkit has
-iteratively matured, and has been deployed and used on several projects and
-platforms. We first briefly recap these deployments with references to the
-corresponding publications, and then present our latest study, in a nursery,
-that recently acted as a stress-test for the library.
+18min long theatre performance between a human actor and a robot. Since that
+time, the toolkit has iteratively matured, and has been deployed and used on
+several projects and platforms. We first briefly recap these deployments with
+references to the corresponding publications, and then present our latest study,
+in a kindergarten, that recently acted as a stress-test for the library.
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{lll}
+        \toprule
+        Study                 & Robot & Middleware \\ \midrule
+        Roboscopie            & PR2       & ROS, {\sc GenoM} \\
+        Interactive Grounding & PR2, LAAS-CNRS's Jido & ROS, {\sc GenoM} \\
+        CoWriter              & Nao       & ROS, NAOqi  \\
+        Ranger at kindergarten & EPFL's Ranger & ROS, aseba  \\
+        \bottomrule
+    \end{tabular}
+    \caption{Overview of significant experiments and studies where \pyRobots{}
+    has been used.}
+\end{table}
+
+\subsubsection{Roboscopie} The first complex deployment scenario for \pyRobots{} was
+a theatre performance entitled \emph{Roboscopie}~\cite{lemaignan2012roboscopie}.
+The toolkit was created out of the need to control a complex robot (a Willow
+Garage PR2) in a structured way, as required for a live performance with a
+human\footnote{The original \pyRobots{} script used for the performance can be
+accessed from~\url{http://www.laas.fr/roboscopie}. Note that this script does
+not reflect anymore the toolkit usage.}
+
+A total of 47 \pyRobots{} actions were written for this event
+(Table~\ref{pyrobots_actions} gives a few significant examples), and the toolkit
+proved to be especially convenient to interleave calls to both ROS-based and
+{\sc GenoM}-based~\cite{mallet2010genom3} components through their respective
+Python bindings.
+
+\pyRobots{} also allowed us to retain the \emph{rapid prototyping} convenience of a
+script language, essential for the robot to ``practise'' and adapt to the
+vision of the director.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{table}[ht!]
@@ -583,46 +618,33 @@ that recently acted as a stress-test for the library.
      \bottomrule
 \end{tabular}
 \end{center}
-\caption{Examples of \pyRobots{} actions, mostly extracted from experiments involving
-    the PR2 robot.}
+\caption{Examples of \pyRobots{} actions (extracted from experiments involving
+the PR2 robot).}
 
 \label{pyrobots_actions}
 \end{table}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\subsubsection{Interactive Grounding} This study on perspective-taking and grounding
+in human-robot interaction~\cite{lemaignan2013talking} is one of the several
+experiments that was built on top of the LAAS-CNRS cognitive
+architecture~\cite{lemaignan2014human}. In this large architecture, \pyRobots{}
+is one of the two available executive controllers, and integrates with a task
+planner, a symbolic knowledge base, several motion planner and a natural
+language processor. \pyRobots{} was favoured over the second execution
+controller (based on PRS) for smaller studies, as a more powerful alternative to
+bare \textit{ad-hoc} scripts.
 
-\subsubsection{Roboscopie} The first complex deployment scenario for \pyRobots{} was
-indeed a theatre performance entitled
-\emph{Roboscopie}~\cite{lemaignan2012roboscopie}. The toolkit was created out of
-the need to control a complex robot (a Willow Garage PR2) in a structured way,
-as required for a live performance with a human\footnote{The original \pyRobots{}
-script used for the performance can be accessed
-from~\url{http://www.laas.fr/roboscopie}. Note that this script does not
-reflect anymore the toolkit usage.}
-
-A total of 47 \pyRobots{} actions were written for this event
-(Table~\ref{pyrobots_actions} gives a few examples), and the toolkit proved to
-be especially convenient to interleave calls to both ROS-based and {\sc
-GenoM}-based\footnote{{\sc GenoM} is software component as well as a middleware
-developed at LAAS-CNRS} components through their respective Python bindings.
-
-\pyRobots{} also allowed us to retain the \emph{rapid prototyping} convenience of a
-script language, essential for the robot to ``practise'' and adapt to the
-vision of the director.
-
-\begin{itemize}
-    \item PR2, with ROS and pocolibs
-    \item Nao, with ROS and NAOqi
-    \item Ranger with Aseba and ROS
-\end{itemize}
-
-
-\begin{itemize}
-    \item roboscopie
-    \item LAAS architecture
-    \item CoWriter
-    \item Ranger
-\end{itemize}
+\subsubsection{CoWriter} The {\sc CoWriter} project~\cite{hood2015those}
+(Figure~\ref{expe-cowriter}) involves an Aldebaran Nao robot and young students
+in a \emph{learning by teaching} interaction: the children have to teach the
+robot how to handwrite. This experiment involved a dual ROS/NAOqi environment,
+bridged within \pyRobots{}. The high-level behaviour was implemented as a finite
+state machine ({\sc SMACH}) whose state corresponded to \pyRobots{} actions.
+While the execution controller was subsequently simplified (towards a tighter
+interaction scenario), this illustrates how \pyRobots{} -- relying on the
+ubiquitous Python language -- can possibly blend into and interact with existing
+tools.
 
 \begin{figure}
         \centering
@@ -632,7 +654,7 @@ vision of the director.
         \label{expe-cowriter}
 \end{figure}
 
-\subsubsection{Stress-test in a nursery}
+\subsubsection{Stress-test in a kindergarten}
 \label{croq}
 
 We organized in June 2014 a pilot study in a kindergarten (on campus) to
@@ -643,11 +665,11 @@ with tidying up, it is shaped as a wooden ``box on wheels''
 (Figure~\ref{expe-nursery}). Hardware-wise, it features an RGB-D camera, IR
 sensors, a range and bearing sensor, a physical front bumper, a scale, a
 removable pacifier (used as a soft on/off switch by the children) and it is
-covered with capacitive tactile panels. The wooden panels cover 186 RGB LEDs,
+covered with capacitive tactile panels. The wooden panels hide 186 RGB LEDs,
 enabling various light patterns, it can play sounds, the two eyes can be fully
 controlled (2 DoFs pupils and actuated eye-lids). Wheel controllers are designed
 such as they switch to freewheel as soon as the robot is pushed by the children.
-The robot is powered by an embedded Gumstix Overo (ARM7l) board running a custom
+The robot is powered by an embedded Gumstix Overo board (ARM7l) running a custom
 Linux image, assisted by three custom microcontroller boards (for low-level
 hardware interfacing).
 
@@ -659,11 +681,11 @@ and Aseba~\cite{magnenat2011aseba} nodes.
         \centering
         \includegraphics[width=0.9\columnwidth]{ranger-side}
         \caption{Infants playing freely (!) with an EPFL's \emph{Ranger} robot.
-        The behaviour of the robot is controlled with \pyRobots{}.}
+        The behaviours of the robot are implemented via \pyRobots{}.}
         \label{expe-nursery}
 \end{figure}
 
-We brought two Ranger robots to a kindergarten (17 children, age: M=3.88,
+We brought two such Ranger robots to a kindergarten (17 children, age: M=3.88,
 SD=0.65), and after a brief introduction (showing them that removing the
 pacifier would ``wake up'' the robot, and putting it back would make it ``fall
 asleep''), we invited the children to freely play with the robots and integrate
@@ -671,15 +693,15 @@ them into their usual games. The experiment lasted 68 minutes.
 
 We purposefully designed a simple behavioural scheme
 (Listing~\ref{croquignole_no_move}): two background actions
-(\python|background_blink| and \python|look_at_touches|) run continuously, and 4
-events are monitored (pacifier added/removed, toy added and bumper hit).
+(\python|background_blink| and \python|look_at_touches|) run continuously, and 5
+events are monitored (pacifier added/removed, toy added/removed and bumper hit).
 
 \begin{listing}[h!]
 
 \begin{pythoncode}
     @action
     def on_pacifier(robot):
-        robot.look_at_lolette()
+        robot.look_at_pacifier()
         robot.blink()
         sleep = robot.fall_asleep()
         robot.lightbar(ramp=colors.RAINBOW).wait()
@@ -719,22 +741,34 @@ events are monitored (pacifier added/removed, toy added and bumper hit).
         while True:
             time.sleep(0.1)
 \end{pythoncode}
-\caption{Source of the high-level behaviours running on the robots during the
-nursery pilot (some behaviours like battery management have been omitted for
+\caption{Simplified source of the high-level behaviours running on the robots during the
+kindergarten study (some behaviours like battery management have been omitted for
 clarity).}
 \label{croquignole_no_move}
 \end{listing}
 
-
+Figure~\ref{croq_actions} shows the average number of events fired and action
+(including sub-actions) \emph{started} per minute, for the whole experiment. The
+diagram reveals several peaks above 180 actions/minutes with a global average of
+70 actions/minutes, which was surprisingly high considering the simple
+behavioural scheme we proposed and the limited actions' depth
+($depth_{max}=depth_{\tt look\_at\_touches}=3$) . As a safety measure, we also
+set for this study a hard limit to the maximum amount of actions allowed to run
+in parallel (20 actions): again, to our surprise, this limit was hit 31 times
+during the experiment.
 
 \begin{figure}
     \centering
     \includegraphics[width=0.9\columnwidth]{croquignole-expe}
-    \caption{Events fired and actions started per minute, over the 68 min-long
+    \caption{Events fired and actions started per minute, over the 68min long
     experiment. The robot sustains an average of 70 actions triggered by minute over
     more than an hour, with peaks at 200 actions/minute.}
-
+    \label{croq_actions}
 \end{figure}
+
+The results of this stress-test provide a reasonable baseline for the
+performances in terms of parallelism and debug/introspection capabilities that
+can be expected from an executive controller.
 
 \section{Conclusion and Future Work}
 
