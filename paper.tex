@@ -181,26 +181,25 @@ ROAR: ~\cite{degroote2011roar}
 
 \paragraph{Domain-specific languages}
 
-Domain-specific languages (DSL), in the widest sense, represent the largest body
-of literature on high-level behaviour programming. They can either be ``actual''
-domain-specific languages like PRS~\cite{ingrand1996prs},
+Domain-specific languages (DSL), in the broadest sense, represent the largest
+body of literature on high-level behaviour programming. They can either be
+actual domain-specific languages like PRS~\cite{ingrand1996prs},
 RPL~\cite{mcdermott1993reactive}, Golog~\cite{levesque1997golog} (and its
-derivatives like {\sc ReadyLOG}~\cite{ferrein2007robot}) or, more recently,
-{\sc urbi}~\cite{baillie2005urbi}; or what Joyeux calls \emph{embedded}
+derivatives like {\sc ReadyLOG}~\cite{ferrein2007robot}) or, more recently, {\sc
+urbi}~\cite{baillie2005urbi}; or what Joyeux calls \emph{embedded}
 DSL~\cite{joyeux2011robot}: extensions of existing languages (typically, dynamic
 languages like Python or Ruby, or logic languages like Prolog) to provide
 high-level paradigms and control structures well suited to the programming of
 robots. {\sc cram}~\cite{beetz2010cram} (based on Lisp and Prolog), {\sc
-roby}~\cite{joyeux2009plan} (based on Ruby), {\sc
-teer}~\cite{magnenat2012teer} (based on Python), are
-examples of such eDSL.
+roby}~\cite{joyeux2009plan} (based on Ruby), {\sc teer}~\cite{magnenat2012teer}
+(based on Python), are examples of such eDSL.
 
 Projects like PRS, Golog or {\sc cram} have large scopes:
 
 
 \pyRobots{} positions itself in this landscape as a lightweight eDSL (in a similar
 fashion to {\sc roby} or {\sc teer}), that focuses on high-level behaviours
-implementation. It seeks unobstrusive interaction with the other components of
+implementation. It seeks unobtrusive interaction with the other components of
 the robot software stack, using Python as ubiquitous binding language. Similar
 to {\sc urbi}, it focuses on transparent preemptive concurrency and event-based programming.
 Also, \pyRobots{}' model favours hierarchical task composition over plans, and does not
@@ -228,7 +227,7 @@ are at the core.
 
 It also offers support for robot resources management (locking of ``parts'' of
 the robot) and uniform manipulation of 6D poses (that integrates transparently
-with other tools like ROS's TF when available).
+with other tools like ROS's {\sc tf} when available).
 
 \section{Concepts and Overview}
 
@@ -286,7 +285,7 @@ instantiated and started at line 8, and cancelled at line 10. This send a
 \python|ActionCancelled| signal to the action that the user can handle using an
 \python|except| statement.
 
-\begin{listing}[H]
+\begin{listing}
 \begin{pythoncode}
     @action
     def safe_walk(robot):
@@ -301,7 +300,8 @@ instantiated and started at line 8, and cancelled at line 10. This send a
 \end{pythoncode}
 \caption{\textbf{Handling a cancellation signal} After one second, the
 \python|safe_walk| action is cancelled. This sends the signal
-\python|ActionCancelled| to the action, that can appropriately terminate.}
+\python|ActionCancelled| to the action, that can appropriately handle it inside
+the \python|except| block.}
 \label{lst:signals}
 \end{listing}
 
@@ -346,7 +346,7 @@ of a compound resource) which is released upon action completion. If the lock is
 already acquired, two strategies are possible: either wait or \emph{fail fast}
 (\python|@lock(..., wait=False)|, l.16).
 
-\begin{listing}[H]
+\begin{listing}
 \begin{pythoncode}
     L_ARM = Resource()
     R_ARM = Resource()
@@ -404,7 +404,7 @@ y, z, qx, qy, qz, qw, frame\}$ or by a dictionary that defines any subset of
 these 8 values.  Internally, \pyRobots{} normalizes and stores the poses in
 their full 8-tuple expansion, as illustrated in listing~\ref{lst:poses}.
 
-\begin{listing}[H]
+\begin{listing}
     \begin{pythoncode*}{linenos=false, xleftmargin=0em}
 
     robot.poses["handL"]
@@ -429,8 +429,8 @@ normalization if needed).}
 \label{lst:poses}
 \end{listing}
 
-Using helper methods like \python|robot.poses.inframe(<pose>, <other frame>)| or
-\python|robot.poses.pantilt(<pose>, <ref frame>)|, the programmer can then
+Using helper methods like \python|inframe(<pose>, <other frame>)| or
+\python|pantilt(<pose>, <ref frame>)|, the programmer can then
 transform a given pose into a different frame or different representation.
 
 Required transformations are computed by \pyRobots{}, and the programmer can
@@ -456,7 +456,7 @@ time (Figure~\ref{log_view}).
 
 \begin{figure}
         \centering
-        \includegraphics[width=0.9\columnwidth]{log}
+        \includegraphics[width=0.8\columnwidth]{log}
         \caption{Screenshot of \pyRobots{} log analyser, processing the log of the
         experiment presented at section~\ref{croq}}
         \label{log_view}
@@ -642,8 +642,8 @@ robot how to handwrite. This experiment involved a dual ROS/NAOqi environment,
 bridged within \pyRobots{}. The high-level behaviour was implemented as a finite
 state machine ({\sc SMACH}) whose state corresponded to \pyRobots{} actions.
 While the execution controller was subsequently simplified (towards a tighter
-interaction scenario), this illustrates how \pyRobots{} -- relying on the
-ubiquitous Python language -- can possibly blend into and interact with existing
+interaction scenario), this illustrates how \pyRobots{}, relying on the
+ubiquitous Python language, can possibly blend into and interact with existing
 tools.
 
 \begin{figure}
