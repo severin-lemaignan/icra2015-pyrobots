@@ -66,18 +66,19 @@ CH-1015 Lausanne, Switzerland \\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{abstract}
 
-Presented is \pyRobots{}, a new software toolkit for the executive control of
-complex robotic systems. Borrowing ideas from previous tools like {\sc
-urbi}~\cite{baillie2005urbi}, it proposes a lightweight Python framework to
+Presented is \pyRobots{}, a new open-source software toolkit for the executive
+control of complex robotic systems. Borrowing ideas from previous tools like
+{\sc urbi}~\cite{baillie2005urbi}, it proposes a lightweight Python framework to
 develop (pre-emptive) concurrent and event-based executive controllers.
 
 Designed in a \emph{bottom-up} fashion, out of the need for a practical,
 unobstrusive tool suitable for rapid prototyping of complex interaction
-scenarios, \pyRobots{} also exposes several simple yet convenient abstractions for
-physical resources management and pose representation.
+scenarios, \pyRobots{} also exposes several simple yet convenient abstractions
+for physical resources management and pose representation. While
+middleware-agnostic, it features specific integration with the ROS middleware.
 
-Finally, and while middleware-agnostic, it features advanced integration with
-the \textit{de-facto} standard ROS middleware.
+Experimental deployments and stress-tests on several robotic platforms
+(including PR2 and Nao) in dynamic human environments are reported.
 
 \end{abstract}
 
@@ -91,51 +92,43 @@ implemented in the so-called \emph{deliberative layer} where decisions are made
 based on perceptions and on the current internal state, and executed by sending
 orders to a \emph{functional layer}.
 
-While individual decision-making components (like task planners) are studied in
-(relative) isolation since years, the \emph{orchestration} issue, with questions
-like \textit{When to start them? Which one should be selected? How to react to a
-new situation in a timely manner?} remains difficult to address in a generic
-way.
+While individual decision-making components (such as task planners) have been
+studied in (relative) isolation for decades, the \emph{orchestration} issue,
+with questions such as \textit{When to start them? Which one should be selected?
+How to react to a new situation in a timely manner?} remains difficult to
+address in a generic way.
 
-Many approaches have been devised (we review them in the next section) that
+Many approaches have been devised that
 include \emph{Finite State Machines} (FSM), domain-specific languages (in
-particular, logic languages) or agent-based frameworks.
+particular, logic languages) or agent-based frameworks; these are reviewed in
+the next section.
 
 These tools adopt principled approaches, often with solid theoretical
 contributions. However, it seems that none of them gained broad acceptance in
 the robotic community, and many of us resort to write ad-hoc scripts, suitable
 for a single application/demonstration/experiment and neither reliable nor
-extensible.
-
-We hypothesize that the software architecture design that these tools enforce,
-combined with their general lack of practicality (unfamiliar language; lack of
-bindings for a given robot or middleware; difficulty to install or setup;
-non-trivial deployment) explain this low level of acceptance more than any
-particular intrinsic weaknesses.
+extensible. We hypothesize that the software architecture that these tools
+enforce, combined with their general lack of practicality (unfamiliar language;
+lack of bindings for a given robot or middleware; difficulty to install or
+setup; non-trivial deployment) explain this low level of acceptance more than
+any particular intrinsic weaknesses.
 
 This article introduces our attempt at designing an unobtrusive execution
-control toolkit, that aims at addressing the \emph{practicality} issue: it has
+control toolset that aims at addressing the \emph{practicality} issue: it has
 been designed and implemented from the bottom-up, starting from actual needs
-when running large robotic systems (including Willow Garage's PR2 and
-Aldebaran's Nao) in dynamic and partially unpredictable environments (typically,
-loosely constrained human-robot interaction scenarios).
+when running large robotic systems (including robots such as PR2 or Nao) in
+dynamic and partially unpredictable environments, such as loosely constrained
+human-robot interaction scenarios.
 
 Instead of an \emph{environment} or a \emph{framework}, which would suggest
 rigid design and development guidelines, \pyRobots{} can be conceived as a set
-of software helpers to write parallel, event-based, high-level robot
+of software libraries to write parallel, event-based, high-level robot
 controllers.  It is written for and in Python, which ensure familiarity, fast
 development cycles and broad support for interfacing with existing robots and
 middlewares. \pyRobots{} is indeed \emph{not} a middleware: it purposefully
 provides no mechanisms to connect to other modules or components. It instead
-\emph{relies} on one (or several) middleware to actually communicate with the
-robot and perform actions.
-
-Also, \pyRobots{} does not provide formal models or verifiability: in its
-current state, it does not attempt to contribute in this field. It focuses
-instead on providing a lightweight tool to control robots in environments that
-require carrying out many tasks in parallel, in an unpredictable, event-based
-manner. As such, \pyRobots{} is focusing on use-cases ranging from prototyping
-to mid-size experiments.
+\emph{relies} on one (or several) middleware(s) to actually communicate with the
+robot.
 
 \subsection{Related Work: Robot Execution Control}
 
@@ -145,32 +138,31 @@ design and provide tools for this task. Degroote provides an in-depth review of
 the existing techniques and tools in~\cite{degroote2012architecture}. We focus
 this review on tools dedicated to the explicit implementation of high-level
 behaviours, excluding complete control stacks (that would typically include a
-middleware and hardware abstractions), meta-tools (like component generators or
-model checkers) and (semi-)automatic techniques (like emerging behaviours or
-learning by demonstration).  In contrast with middlewares for which the robotic
-community relies on a few \emph{de-facto} standards (ROS, YARP, OpenRTM), we
-want to underline that no such widely-used softwares exist for execution
-control, and we believe that most of today's robot behaviours are implemented as
-\emph{ad-hoc} scripts.
+middleware and hardware abstractions), meta-tools (such as component generators
+or model checkers) and (semi-)automatic techniques (such as emerging behaviours
+or learning by demonstration). Unlike \emph{middlewares} where a few tools --
+ROS, YARP, {\sc orocos}-rtt, OpenRTM -- are the \emph{de facto} standards, no tool really
+dominate the field of execution control, and we believe instead that most of
+today's robot behaviours are implemented as \emph{ad-hoc} scripts.
 
 We identify three categories of execution control tools: \emph{finite state
 machines}, \emph{agent-based} controllers and
-\emph{domain-specific languages} (DSL), including \emph{embedded domain-specific
-languages} (eDSL,~\cite{joyeux2011robot}). These categories overlap to a certain
-extend, but they should reasonably reflect the motivational concepts/ideas that
+\emph{Domain-Specific Languages} (DSL), including \emph{embedded Domain-Specific
+Languages} (eDSL,~\cite{joyeux2011robot}). These categories overlap to a certain
+extent, but still reflect reasonably well the motivational concepts/ideas that
 gave birth to the specific tools.
 
-\paragraph{Finite State Machines} (or FSM) are the most well-known paradigm to
+\paragraph{Finite State Machines} They are the most well-known paradigm to
 describe how a robot goes from one \emph{state} (typically, performing an
-action) to another state when some condition becomes true or some event is
+action) to another state when some condition is satisfied or some event is
 triggered. Common FSM implementations in robotics include {\sc
-rfSM}~\cite{klotzbucher2010orocos} (part of the OROCOS framework) and
+rfSM}~\cite{klotzbucher2010orocos} (part of the {\sc orocos} framework) and
 {\sc smach}~\cite{bohren2010smach}. State machine semantics are well
 understood~\cite{harel1996statemate} and provide a well structured model,
-suitable for meta-reasoning (like verification). However, FSM are also
+suitable for meta-reasoning (such as verification). However, FSM are also
 acknowledged to be ill-suited for complex systems (where the number of state
 easily ``explodes'') or relatively dynamic and unpredictable environments where
-it can prove difficult to \textit{a priori} exhaustively list transitions.
+it can prove difficult to exhaustively list transitions \textit{a priori}.
 
 
 \paragraph{Agent-based controllers}
@@ -179,19 +171,19 @@ The T-REX architecture~\cite{mcgann2007trex} partitions the execution control
 problem into several agents, each one composed of a (temporal) planner and an
 execution layer. At run-time, the different agents are constantly synchronised
 to maintain the consistency of the global plan. ROAR~\cite{degroote2011roar}
-augments this idea with a logic mechanism allowing the system to automatically
+augments this idea with a logic mechanism, allowing the system to automatically
 select and start agents depending on the task at hand.
 
 \paragraph{Domain-specific languages}
 
-Domain-specific languages (DSL), in the broadest sense, represent the largest
-body of literature on high-level behaviour programming. They can either be
-actual domain-specific languages like PRS~\cite{ingrand1996prs},
-RPL~\cite{mcdermott1993reactive}, Golog~\cite{levesque1997golog} (and its
-derivatives like {\sc ReadyLOG}~\cite{ferrein2007robot}) or, more recently, {\sc
+In the broadest sense, they represent the largest body of literature on
+high-level behaviour programming. They can either be actual domain-specific
+languages such as PRS~\cite{ingrand1996prs}, RPL~\cite{mcdermott1993reactive},
+Golog~\cite{levesque1997golog} (and its derivatives such as {\sc
+ReadyLOG}~\cite{ferrein2007robot}) or, more recently, {\sc
 urbi}~\cite{baillie2005urbi}; or what Joyeux calls \emph{embedded}
-DSL~\cite{joyeux2011robot}: extensions of existing languages (typically, dynamic
-languages like Python or Ruby, or logic languages like Prolog) to provide
+DSL~\cite{joyeux2011robot}. eDSL are extensions of existing languages (typically, dynamic
+languages such as Python or Ruby, or logic languages such as Prolog) to provide
 high-level paradigms and control structures well suited to the programming of
 robots. {\sc cram}~\cite{beetz2010cram} (based on Lisp and Prolog), {\sc
 roby}~\cite{joyeux2009plan} (based on Ruby), {\sc teer}~\cite{magnenat2012teer}
@@ -199,12 +191,13 @@ roby}~\cite{joyeux2009plan} (based on Ruby), {\sc teer}~\cite{magnenat2012teer}
 
 \pyRobots{} positions itself in this landscape as a lightweight eDSL (in a
 similar fashion to {\sc roby} or {\sc teer}), that focuses on high-level
-behaviours implementation. It seeks unobtrusive interaction with the other
-components of the robot software stack, using Python as ubiquitous binding
-language. Similar to {\sc urbi}, it focuses on transparent pre-emptive
+behaviour implementation. Unlike larger stacks, \pyRobots{} does not provide
+formal models or verifiability. It aims to provide unobtrusive interaction with
+the other components of the robot software stack, using Python as the ubiquitous
+binding language. Similar to {\sc urbi}, it focuses on transparent pre-emptive
 concurrency and event-based programming.  Also, \pyRobots{}' model favours
 hierarchical task composition over plans, and does not provide by itself any
-task planning service, delegating this to optional external tools.
+task planning service.
 
 %\subsection{Guiding principles}
 %
@@ -232,19 +225,19 @@ task planning service, delegating this to optional external tools.
 %
 \section{Concepts and Overview}
 
-This section introduces the main concepts of \pyRobots{},
-and provide an overview of the features and mechanisms. Since \pyRobots{} is an
-open-source software, the interested reader can also refer to the source code
-and documentation, available from~\url{https://github.com/chili-epfl/pyrobots}.
+This section introduces the main concepts of \pyRobots{}, and provide an
+overview of the features and mechanisms. The interested reader can refer to
+the source code and documentation, available
+from~\url{https://github.com/chili-epfl/pyrobots}.
 
 \subsection{Core concepts}
 
 \pyRobots{} core concepts are simple: on one hand, the user creates a
-\textbf{robot} as an instance of a \python|GenericRobot|, that encapsulates the
+\textbf{robot} as an instance of a \python|GenericRobot| that encapsulates the
 different low-level \textbf{controllers} (proxies to actuators, typically
-provided by a middleware like ROS) and the \textbf{state} of the robot
-(typically a set proxies to the sensors, or a connector to a database, etc.,
-accessed through a key-value container -- a dictionary-like object).
+provided by a middleware such as ROS) and the \textbf{state} of the robot
+(typically a set of proxies to the sensors accessed through a key-value
+container).
 
 On the other hand, the user creates as many high-level \textbf{actions} as
 desired, as regular Python functions, only annotated with the \python|@action|
@@ -252,11 +245,11 @@ decorator. Actions are automatically added to the \textbf{robot}, and can access
 its state and controllers to perform actual physical actions.
 
 The user can list \textbf{events} that the \textbf{robot} must monitor, and
-attach callback to them.
+attach callbacks to them.
 
 Finally, the user can declare arbitrary \textbf{resources}, usually
-corresponding to the robot physical components (for instance, the wheels, the
-camera) and guarantee exclusive access to the required resource to specific
+corresponding to the robot's physical components (for instance, the wheels, the
+camera) and guarantee exclusive access to these resource to a specific set of
 actions.
 
 \subsection{Asynchronous actions}
@@ -264,25 +257,24 @@ actions.
 \emph{Actions} in \pyRobots{} are asynchronous by default. They are implemented as
 \emph{futures} (also known as \emph{promises}) and therefore executed in
 independent threads. To the developer, however, they appear as regular Python
-function annotated with the \python|@action| decorator, and are invoked
+functions annotated with the \python|@action| decorator, and are invoked
 like any other function.  Since they are asynchronous, these functions may
-perfectly block or even never return (typically useful to implement continuous
+block or even never return (typically useful for implementing continuous
 background behaviours).
 
 Actions can also call each other (nested actions), allowing natural
-decomposition of complex tasks into sub-actions and atomic actions (we note
-hereafter $depth$ the nesting level of an action, \ie the maximum number of
-calls to sub-actions until an atomic action is reached).
+decomposition of complex tasks into sub-actions (the nesting depth of an action
+is hereafter noted $depth$).
 
-\emph{Signaling:} Behaviours often need to be paused or cancelled.  This raises
+Behaviours often need to be paused or cancelled.  This raises
 an issue that specifically needs to be addressed in robotics: before suspending
 an action, one often wants to first bring back the robot into some form of rest
 state (\eg one would not want to suddenly cancel a \python|walk| action in the
 middle of a step without first bringing back the foot to the ground). \pyRobots{}
-addresses this issue through signals, and extends standard Python thread into
+addresses this issue through signals, and extends the standard Python thread into
 \emph{signaling threads}, relying on Python's usual syntax for exception
 handling. Listing~\ref{lst:signals} illustrates this mechanism. The action is
-instantiated and started at line 8, and cancelled at line 10. This send a
+instantiated and started at line 8, and cancelled at line 10. This sends an
 \python|ActionCancelled| signal to the action that the user can handle using an
 \python|except| statement.
 
@@ -301,23 +293,23 @@ instantiated and started at line 8, and cancelled at line 10. This send a
 \end{pythoncode}
 \caption{\textbf{Handling a cancellation signal} After one second, the
 \python|safe_walk| action is cancelled. This sends the signal
-\python|ActionCancelled| to the action, that can appropriately handle it inside
+\python|ActionCancelled| to the action that can appropriately handle it inside
 the \python|except| block.}
 \label{lst:signals}
 \end{listing}
 
-Pausing actions is more complex (the action internal state must be saved, a mean
-to resume the action where it was interrupted must be provided, the user must be
-given ways to code transition behaviours when pausing and resuming) and is not
-currently supported by \pyRobots{}.
+Pausing actions is more complex (the action's internal state must be saved, a
+means to resume the action must be provided and the user must be given ways to
+code transition behaviours when pausing and resuming) and is not currently
+supported by \pyRobots{}.
 
 \subsection{Events}
 
 Sharing the same syntax with {\sc urbi}, events in \pyRobots{} can by monitored
 through the methods \python|on| (one shot event) and \python|whenever|
-(continuous event monitoring). Event conditions can be either a predicate (that
-must take as single argument the robot instance) or a pair of $\{\text{state
-key}, \text{condition}\}$ with condition in $\{\text{value}=x, \text{become}=x,
+(continuous event monitoring). Event conditions can either be a predicate
+(taking the robot instance as its only argument) or a $\{\text{state
+key}, \text{condition}\}$ pair, with condition one of $\{\text{value}=x,
 \text{below}=x, \text{above}=x, \text{decrease}=x, \text{increase}=x\}$.
 Examples of event usage can be seen at lines 33--38 of
 listing~\ref{croquignole_no_move}.
@@ -326,26 +318,25 @@ Each event monitor lives in its own separate thread, and when the event is fired
 the callback (usually, an action) is invoked from the event monitor thread
 itself.
 
-\subsection{Resources management}
+\subsection{Resource management}
 
 Physical robot resources (mainly actuators, but possibly sensors as
-well) usually mandate exclusive use (it is seldom desirable that two different actions
-control the wheels of a robot at the same time). \pyRobots{} provides a resource
+well) usually mandate exclusive use. \pyRobots{} provides a resource
 locking mechanism that relies on the \python|@lock| annotation: an action
 annotated with \python|@lock(ARMS)| (Listing~\ref{lst:resources}, l.6) will
-acquire (or wait for) the \python|ARM| resource when being executed.
+acquire (or wait for) the \python|ARMS| resource before being executed.
 
 This mechanism is generic and \pyRobots{} makes no assumptions concerning the
-actual resources available/meaningful to a specific robot. The
+actual resources available to a specific robot. The
 programmer define them himself, either as stand-alone or as compound
-resources (listing~\ref{lst:resources}, l.1--3).
+resources (Listing~\ref{lst:resources}, l.1--3).
 
-A given action can lock several distinct resources (with the corresponding
+A given action can lock several distinct resources with the corresponding
 number of \python|@lock| annotations. When executed, the
-action acquires a lock on the resource (and all dependent resources in the case
+action acquires a lock on the resource (and all sub-resources in the case
 of a compound resource) which is released upon action completion. If the lock is
 already acquired, two strategies are possible: either wait or \emph{fail fast}
-(\python|@lock(..., wait=False)|, l.16).
+(\python|@lock(..., wait=False)|, Listing~\ref{lst:resources}, l.16).
 
 \begin{listing}
 \begin{pythoncode}
@@ -384,26 +375,27 @@ action-level, through annotations.}
 
 \subsection{Uniform management of poses and rigid transformations}
 
-Managing poses, transformations, frames in real-world scenarios is not an easy
-task, mainly because it seems that every single library, middleware or robotic
-platform relies on its own conventions (rotation representations, in particular,
-are a common source of inconsistencies -- quaternions, (the many) Euler
+Managing poses, transformations and frames in real-world scenarios is not an
+easy task, mainly because it appears that libraries, middlewares or robotic
+platforms tend each to rely on their own conventions; rotation representations,
+in particular, are a common source of inconsistencies -- quaternions, Euler
 conventions, rotation matrices, Rodrigues, yaw-pitch-roll notations being all
-rather frequent). Within the ROS ecosystem, the Transform Library ({\sc
-tf},~\cite{foote2013tf}) has played a major role to make it convenient to work
-with frames, and poses can always be expressed and shared in the most convenient
+rather frequent. Within the ROS ecosystem, the Transform Library ({\sc
+tf},~\cite{foote2013tf}) has played a major role in making it convenient to work
+with frames: poses can always be expressed and shared in the most convenient
 local frame, {\sc tf} taking care of required intermediate transformation.
 
 \pyRobots{} pose management builds on this idea to offer flexible pose
-representations \emph{within} the control scripts. Everytime a 6D pose needs to
+representations \emph{within} the control scripts. Every time a 6D pose needs to
 be specified (like a navigation goal or a target pose for an arm), it can be
-expressed as a simple frame name, by a triple $\{x, y, z\}$ (default frame {\tt
-map} is then assumed), by a 4-tuple $\{x, y, z, frame\}$, by a 6-tuple $\{x, y,
-z, rx, ry, rz\}$ (using $sxyz$ Euler convention), by a 7-tuple $\{x, y, z, rx,
-ry, rz, frame\}$, by a 7-tuple $\{x, y, z, qx, qy, qz, qw\}$, by a 8-tuple $\{x,
-y, z, qx, qy, qz, qw, frame\}$ or by a dictionary that defines any subset of
-these 8 values.  Internally, \pyRobots{} normalizes and stores the poses in
-their full 8-tuple expansion, as illustrated in listing~\ref{lst:poses}.
+expressed as a simple frame name, by a 3-tuple $(x, y, z)$ (default frame {\tt
+map} is then assumed), by a 4-tuple $(x, y, z, frame)$, by a 6-tuple $(x, y, z,
+rx, ry, rz)$ (using $sxyz$ Euler convention), by a 7-tuple $(x, y, z, rx, ry,
+rz, frame)$, by a 7-tuple $(x, y, z, qx, qy, qz, qw)$, by an 8-tuple $(x, y, z,
+qx, qy, qz, qw, frame)$ or by a dictionary that defines any subset of $(x, y, z,
+qx, qy, qz, qw, frame)$.  Internally, \pyRobots{} normalizes and stores the
+poses in their full 8-tuple expansion, as illustrated in
+Listing~\ref{lst:poses}.
 
 \begin{listing}
     \begin{pythoncode*}{linenos=false, xleftmargin=0em}
@@ -430,12 +422,12 @@ normalization if needed).}
 \label{lst:poses}
 \end{listing}
 
-Using helper methods like \python|inframe(<pose>, <other frame>)| or
-\python|pantilt(<pose>, <ref frame>)|, the programmer can then
+Using helper methods such as \python|inframe| \python|(<pose>, <other frame>)| or
+\python|pantilt| \python|(<pose>, <ref frame>)|, the programmer can then
 transform a given pose into a different frame or different representation.
 
 Required transformations are computed by \pyRobots{}, and the programmer can
-provide new ``sources'' of frame transformations through the instanciation of
+provide new ``sources'' of frame transformations through the instantiation of
 \python|FrameProviders| that takes advantage of robot- and middleware-specific
 infrastructures (for example, ROS {\sc tf}, Aldebaran's {\tt NAOqi} frame
 conventions, etc.).
@@ -443,32 +435,31 @@ conventions, etc.).
 \subsection{Developer support: logging, debugging, introspection}
 \label{}
 
-Running robots in real-world, \ie dynamic and unpredictable, environments
+Running robots in real-world  environments that are dynamic and unpredictable
 entails repetitive coding-testing-debugging development cycles. \pyRobots{}
-provides several tools to support this development phase. A special attention
-was paid to the logging infrastructure. It relies on the versatile Python
-built-in logging tools, which support configurable parallel logging streams
-(typically, a full debug stream is logged to a file while a less verbose stream
-is output on the console at run-time).
+provides several tools to support this development phase that rely on the
+versatile Python built-in logging tools, which support configurable parallel
+logging streams (typically, a full debug stream is logged to a file while a less
+verbose stream is output on the console at run-time).
 
-\pyRobots{} logs are designed to allow full \emph{post-mortem} replay, and we
+\pyRobots{} logs are designed to allow full \emph{offline} replay, and we
 provide a graphical interface to display the actions and resource usage over
 time (Figure~\ref{log_view}).
 
 \begin{figure}
         \centering
         \includegraphics[width=0.9\columnwidth]{log}
-        \caption{Screenshot of \pyRobots{} log analyser, processing the log of the
-        experiment presented at section~\ref{croq}}
+        \caption{Screenshot of \pyRobots{} log analyzer, processing the log of the
+        experiment presented in section~\ref{croq}}
         \label{log_view}
 \end{figure}
 
 Debugging and introspection support is provided at run-time through a range of
-off-the-shell Python debuggers. Remote debugging is also supported with standard
-tools like {\sc rpdb2}~\footnote{\url{http://winpdb.org}}. Thanks to the dynamic
-nature of Python, these debuggers not only provide insights on failures, but
-also provide full introspection and run-time manipulation of the application
-state.
+off-the-shelf Python debuggers. Remote debugging is also supported with standard
+tools such as {\sc rpdb2}~\footnote{\url{http://winpdb.org}}. Python being an
+interpreted language, these debuggers do not only provide insights on failures,
+but also tooling for full introspection and run-time manipulation of the
+application state.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -476,10 +467,10 @@ state.
 
 The development of \pyRobots{} started in 2011, driven by the requirements of a
 18min long theatre performance between a human actor and a robot. Since that
-time, the toolkit has iteratively matured, and has been deployed and used on
-several projects and platforms. We first briefly recap these deployments with
-references to the corresponding publications, and then present our latest study,
-in a kindergarten, that recently acted as a stress-test for the library.
+time, the toolset has iteratively matured, and has been deployed and used on
+several projects and platforms. We first briefly summarize these deployments,
+and then present a recent study in a kindergarten that acted as a stress-test
+for the library.
 
 \begin{table}[h]
     \centering
@@ -492,27 +483,25 @@ in a kindergarten, that recently acted as a stress-test for the library.
         Ranger at kindergarten & EPFL's Ranger & ROS, aseba  \\
         \bottomrule
     \end{tabular}
-    \caption{Overview of significant experiments and studies where \pyRobots{}
-    has been used.}
+    \caption{Overview of the main studies where \pyRobots{} was used.}
 \end{table}
 
 \subsubsection{Roboscopie} The first complex deployment scenario for \pyRobots{} was
 a theatre performance entitled \emph{Roboscopie}~\cite{lemaignan2012roboscopie}.
-The toolkit was created out of the need to control a complex robot (a Willow
-Garage PR2) in a structured way, as required for a live performance with a
+The toolset was created out of the need to control a complex robot (a PR2) in a structured way, as required for a live performance with a
 human\footnote{The original \pyRobots{} script used for the performance can be
 accessed from~\url{http://www.laas.fr/roboscopie}. Note that this script does
-not reflect anymore the current toolkit usage.}
+not reflect anymore the current toolkit usage.}.
 
 A total of 47 \pyRobots{} actions were written for this event
-(Table~\ref{pyrobots_actions} gives a few significant examples), and the toolkit
-proved to be especially convenient to interleave calls to both ROS-based and
+(Table~\ref{pyrobots_actions} gives a few significant examples), and the toolset
+proved to be convenient for interleaving calls to both ROS-based and
 {\sc GenoM}-based~\cite{mallet2010genom3} components through their respective
 Python bindings.
 
-\pyRobots{} also allowed us to retain the \emph{rapid prototyping} convenience of a
-script language, essential for the robot to ``practise'' and adapt to the
-vision of the director.
+\pyRobots{} also allowed us to retain the \emph{rapid prototyping} convenience
+of a script language, essential for the robot's programmer to quickly adapt to
+the vision of the director.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{table}[ht!]
@@ -547,7 +536,7 @@ in human-robot interaction~\cite{lemaignan2013talking} is one of the several
 experiments that was built on top of the LAAS-CNRS cognitive
 architecture~\cite{lemaignan2014human}. In this large architecture, \pyRobots{}
 is one of the two available executive controllers, and integrates with a task
-planner, a symbolic knowledge base, several motion planner and a natural
+planner, a symbolic knowledge base, several motion planners and a natural
 language processor. \pyRobots{} was favoured over the second execution
 controller (based on PRS) for smaller studies, as a more powerful alternative to
 bare \textit{ad-hoc} scripts.
@@ -555,17 +544,17 @@ bare \textit{ad-hoc} scripts.
 \begin{figure}
         \centering
         \includegraphics[width=0.9\columnwidth]{cowriter}
-        \caption{Children teaching an Aldebaran Nao interacting how to
-        handwrite.}
+        \caption{\textbf{CoWriter}: Children interactively teaching a Nao how to
+        write.}
         \label{expe-cowriter}
 \end{figure}
 
 \subsubsection{CoWriter} The {\sc CoWriter} project~\cite{hood2015those}
-(Figure~\ref{expe-cowriter}) involves an Aldebaran Nao robot and young students
+(Figure~\ref{expe-cowriter}) involves a Nao robot and young students
 in a \emph{learning by teaching} interaction: the children have to teach the
-robot how to handwrite. This experiment involved a dual ROS/NAOqi environment,
+robot how to write. This experiment involved a dual ROS/NAOqi environment,
 bridged within \pyRobots{}. The high-level behaviour was implemented as a finite
-state machine ({\sc SMACH}) whose state corresponded to \pyRobots{} actions.
+state machine ({\sc smach}) whose states corresponded to \pyRobots{} actions.
 While the execution controller was subsequently simplified (towards a tighter
 interaction scenario), this illustrates how \pyRobots{}, relying on the
 ubiquitous Python language, can possibly blend into and interact with existing
@@ -574,39 +563,38 @@ tools.
 \subsubsection{Stress-test in a kindergarten}
 \label{croq}
 
-We organized in June 2014 a pilot study in a kindergarten (on campus) to
-stress-test the hardware and software of the Ranger
-robot~\cite{mondada2014ranger}. The Ranger robot is an autonomous robot designed
-for interaction with children. As it was primarily designed to support children
-with tidying up, it is shaped as a wooden ``box on wheels''
-(Figure~\ref{expe-nursery}). Hardware-wise, it features an RGB-D camera, IR
-sensors, a range and bearing sensor, a physical front bumper, a scale, a
-removable pacifier (used as a soft on/off switch by the children) and it is
-covered with capacitive tactile panels. The wooden panels hide 186 RGB LEDs,
-enabling various light patterns, it can play sounds, the two eyes can be fully
-controlled (2 DoFs pupils and actuated eye-lids). Wheel controllers are designed
-such as they switch to freewheel as soon as the robot is pushed by the children.
-The robot is powered by an embedded Gumstix Overo board (ARM7l) running a custom
-Linux image, assisted by three custom microcontroller boards (for low-level
-hardware interfacing).
+We organized a pilot study in a kindergarten to stress-test the hardware and
+software of the Ranger robot~\cite{mondada2014ranger}. The Ranger robot is an
+autonomous robot designed for interaction with children. As it was primarily
+designed to support children with tidying up, it is shaped as a wooden ``box on
+wheels'' (Figure~\ref{expe-nursery}). It features an RGB-D camera, IR sensors, a
+range and bearing sensor, a physical front bumper, a scale, a removable pacifier
+(used as a soft on/off switch by the children) and is covered with capacitive
+tactile panels. The wooden panels hide 186 RGB LEDs, enabling various light
+patterns, the two eyes can be fully controlled (2 DoFs pupils and actuated
+eye-lids) and the robot can play sounds. Wheel controllers are designed such
+that they switch to freewheel as soon as the robot is pushed by the children.
+The robot is powered by a Gumstix Overo board (ARM7l) running a custom Linux
+image, assisted by three custom microcontroller boards for low-level hardware
+interfacing.
 
-Software-wise, all the user-facing behaviours are implemented with \pyRobots{},
+All user-facing behaviours are implemented with \pyRobots{},
 and the communication with the hardware is abstracted through a mix of ROS
 and Aseba~\cite{magnenat2011aseba} nodes.
 
 \begin{figure}
         \centering
         \includegraphics[width=0.9\columnwidth]{ranger-side}
-        \caption{Infants playing freely (!) with an EPFL's \emph{Ranger} robot.
+        \caption{\textbf{Stress-test}: Infants playing freely (!) with an EPFL's \emph{Ranger} robot.
         The behaviours of the robot are implemented via \pyRobots{}.}
         \label{expe-nursery}
 \end{figure}
 
 We brought two such Ranger robots to a kindergarten (17 children, age: M=3.88,
-SD=0.65), and after a brief introduction (showing them that removing the
-pacifier would ``wake up'' the robot, and putting it back would make it ``fall
-asleep''), we invited the children to freely play with the robots and integrate
-them into their usual games. The experiment lasted 68 minutes.
+SD=0.65). After a brief introduction (showing them that removing the pacifier
+would ``wake up'' the robot, and putting it back would make it ``fall asleep''),
+we invited the children to freely play with the robots and integrate them into
+their usual games. The experiment lasted 68 minutes.
 
 We purposefully designed a simple behavioural scheme
 (Listing~\ref{croquignole_no_move}): two background actions
@@ -659,13 +647,13 @@ events are monitored (pacifier added/removed, toy added/removed and bumper hit).
             time.sleep(0.1)
 \end{pythoncode}
 \caption{Simplified source of the high-level behaviours running on the robots during the
-kindergarten study (some behaviours like battery management have been omitted for
+kindergarten study (some behaviours such as the battery management have been omitted for
 clarity).}
 \label{croquignole_no_move}
 \end{listing}
 
-Figure~\ref{croq_actions} shows the average number of events fired and action
-(including sub-actions) \emph{started} per minute, for the whole experiment. The
+Figure~\ref{croq_actions} shows the average number of events fired and actions
+(including sub-actions) started per minute for the whole experiment. The
 diagram reveals several peaks above 180 actions/minutes with a global average of
 70 actions/minutes, which was surprisingly high considering the simple
 behavioural scheme we proposed and the limited actions' depth
@@ -684,37 +672,38 @@ during the experiment.
 \end{figure}
 
 The results of this stress-test provide a reasonable baseline for the
-performances in terms of parallelism and debug/introspection capabilities that
-can be expected from an executive controller.
+performance in terms of parallelism and debug/introspection capabilities that
+can be expected from an executive controller in a human-robot ``open''
+interaction context.
 
 \section{Conclusion and Future Work}
 
 
-We have presented here \pyRobots{}, a novel Python library supporting
+We have presented \pyRobots{}, a novel Python library supporting
 development of high-level executive controllers for robotics.
 
 Its main features include a lightweight, unobtrusive design based on code
 annotations; a pre-emptive concurrency model allowing for proper, explicit
 handling of task cancellation; support for event-based programming; a flexible
-robot resources locking mechanism and a built-in support for 6D pose
+robot resource locking mechanism and built-in support for 6D pose
 manipulation and transformation.
 
-\pyRobots{} does not aim at replacing large execution control frameworks. It
-proposes instead an accessible set of tools to improve upon the all-too-common
+\pyRobots{} does not aim to replace large execution control frameworks. Instead,
+it provides an accessible set of tools to improve upon the all-too-common
 \emph{ad-hoc} scripts, while remaining middleware agnostic.
 
-The article also reports on several experimental deployments on four different
-kind of robots using a mixture of four different middlewares.
+We also report on several experimental deployments on four different
+kind of robots using four different middlewares.
 
-While already four years old, several possible developments would offer
-interesting perspectives for this tool, including (a)~the support to suspend (and
-then resume) actions (which requires defining a satisfying syntax to declare
-suspend/resume behaviours within actions); (b)~mechanisms to define action
-priorities; (c)~investigate recent work on Python's {\tt asynchio} mechanisms
-(that provide reference implementation of co-routines in Python).
+Several possible developments would offer interesting perspectives for this
+tool, including (a)~the support to suspend (and then resume) actions which
+requires defining a satisfying syntax to declare suspend/resume behaviours
+within actions; (b)~mechanisms to define action priorities; (c)~investigate
+recent work on Python's {\tt asynchio} mechanisms (that provide reference
+implementation of co-routines in Python).
 
 Being available as an open-source platform, documented and easy to install, we
-believe that these development objectives may materialize soon, as well-defined
+believe that these development objectives may be reached soon, as well-defined
 use-cases emerge from the library's users.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
