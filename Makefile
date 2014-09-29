@@ -1,7 +1,7 @@
 
-TARGET=paper.tex
+TARGET=root.tex
 
-PLOT=$(wildcard data/*.gnuplot)
+#PLOT=$(wildcard data/*.gnuplot)
 DOT=$(wildcard figs/*.dot)
 SVG=$(wildcard figs/*.svg)
 
